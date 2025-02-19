@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cors = require("cors");
 const mysql = require("mysql2");
 const express = require("express");
 const bcrypt = require("bcrypt"); //for hashing password
@@ -8,7 +9,7 @@ const app = express();
 // Middleware to parse JSON and URL-encoded data
 app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing form submissions
-
+app.use(cors()); // Enable CORS after the app initialization
 const blacklistedTokens = new Set(); //Store invalidated token
 
 // MySQL connection
@@ -131,7 +132,7 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 });
 
 // API Endpoint to Fetch Profile
-app.get("/api/profile/:id", (req, res) => {
+app.get("/api/userProfile/:id", (req, res) => {
   const userId = req.params.id;
   db.query("SELECT * FROM users WHERE id = ?", [userId], (err, result) => {
     if (err) {
@@ -141,7 +142,7 @@ app.get("/api/profile/:id", (req, res) => {
   });
 });
 
-app.put("/api/profile/:id", (req, res) => {
+app.put("/api/userProfile/:id", (req, res) => {
   const userId = req.params.id;
   const {
     name,
@@ -158,7 +159,7 @@ app.put("/api/profile/:id", (req, res) => {
   } = req.body;
 
   db.query(
-    "UPDATE users SET name=?, phone=?, jobTitle=?, company=?, experience=?, skills=?, degree=?, university=?, graduationYear=?, previousRole=?, duration=? WHERE id=?",
+    "UPDATE users SET username=?, phone=?, jobTitle=?, company=?, experience=?, skills=?, degree=?, university=?, graduationYear=?, previousRole=?, duration=? WHERE id=?",
     [
       name,
       phone,
@@ -173,7 +174,7 @@ app.put("/api/profile/:id", (req, res) => {
       duration,
       userId,
     ],
-    (err, res) => {
+    (err, result) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
