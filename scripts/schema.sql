@@ -14,9 +14,20 @@ CREATE TABLE users (
   username VARCHAR(50) NOT NULL UNIQUE,
   email VARCHAR(100) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NULL, -- Added phone number
+  jobTitle VARCHAR(100) NULL, -- Job title
+  company VARCHAR(100) NULL, -- Company name
+  experience VARCHAR(255) NULL, -- Years of experience
+  skills TEXT NULL, -- List of skills
+  degree VARCHAR(100) NULL, -- Degree
+  university VARCHAR(100) NULL, -- University
+  graduationYear INT NULL, -- Year of graduation
+  previousRole VARCHAR(100) NULL, -- Previous job role
+  duration VARCHAR(50) NULL, -- Duration of previous role
   role ENUM('admin', 'client', 'fixer') NOT NULL, -- Differentiates user roles
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 CREATE TABLE reviews (
   id INT AUTO_INCREMENT PRIMARY KEY,
