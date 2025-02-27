@@ -93,8 +93,9 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   const [users] = await db
-    .promise()
-    .query("SELECT * FROM USERS WHERE email = ?", [email]);
+  .promise()
+  .query("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", [email]);
+
   //if no such email exist in database
   if (users.length === 0) {
     return res.status(400).json({ error: "Invalid email" });
@@ -132,15 +133,51 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 });
 
 // API Endpoint to Fetch Profile
-app.get("/api/userProfile/:id", (req, res) => {
+// API Endpoint to Update User Profile
+app.put("/api/userProfile/:id", async (req, res) => {
   const userId = req.params.id;
-  db.query("SELECT * FROM users WHERE id = ?", [userId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+  const {
+    name,
+    phone,
+    jobTitle,
+    company,
+    experience,
+    skills,
+    degree,
+    university,
+    graduationYear,
+    previousRole,
+    duration,
+  } = req.body;
+
+  // Convert empty strings to NULL for numerical fields
+  const sanitizedGraduationYear = graduationYear ? graduationYear : null;
+
+  // Construct query
+  const query = `
+    UPDATE users 
+    SET username=?, phone=?, jobTitle=?, company=?, experience=?, skills=?, degree=?, 
+        university=?, graduationYear=?, previousRole=?, duration=? 
+    WHERE id=?
+  `;
+  const values = [
+    name, phone, jobTitle, company, experience, skills, degree,
+    university, sanitizedGraduationYear, previousRole, duration, userId,
+  ];
+
+  try {
+    const [result] = await db.promise().query(query, values);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "User not found" });
     }
-    res.json(result[0]); // Return first result
-  });
+    res.json({ message: "Profile updated successfully" });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
+
 
 app.put("/api/userProfile/:id", (req, res) => {
   const userId = req.params.id;
@@ -183,26 +220,30 @@ app.put("/api/userProfile/:id", (req, res) => {
   );
 });
 
-//Middleware to authenticate JWT token
+// API Route to Verify JWT Token
+app.get("/api/auth/verify", authenticateToken, (req, res) => {
+  res.json({ valid: true, user: req.user });
+});
+
+// Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) {
-    //No token is sent
+
+  if (!token) {
     return res.status(401).json({ error: "Unauthorized access! Please login" });
   }
+
   if (blacklistedTokens.has(token)) {
-    //Token is invalidated
-    return res
-      .status(403)
-      .json({ error: "Session invalid, please login again" });
+    return res.status(403).json({ error: "Session invalid, please login again" });
   }
+
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      //token is invalid
       return res.status(403).json({ error: "Invalid or expired session" });
     }
-    req.user = user; //set user
+
+    req.user = user; // Attach user details to the request
     next();
   });
 }
