@@ -93,8 +93,8 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   const [users] = await db
-  .promise()
-  .query("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", [email]);
+    .promise()
+    .query("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", [email]);
 
   //if no such email exist in database
   if (users.length === 0) {
@@ -111,9 +111,11 @@ app.post("/api/login", async (req, res) => {
       },
       process.env.JWT_SECRET
     );
-    return res
-      .status(200)
-      .json({ message: "Login successful", user: user.id, token: token });
+    return res.status(200).json({
+      message: "Login successful",
+      user: user.id,
+      token: token,
+    });
   } else {
     //invalid password
     return res.status(400).json({ message: "Incorrect password" });
@@ -134,10 +136,11 @@ app.post("/api/logout", authenticateToken, (req, res) => {
 
 // API Endpoint to Fetch Profile
 // API Endpoint to Update User Profile
-app.put("/api/userProfile/:id", async (req, res) => {
-  const userId = req.params.id;
+app.put("/api/userProfile/:userId", authenticateToken, async (req, res) => {
+  const userId = req.params.userId;
   const {
     name,
+    email,
     phone,
     jobTitle,
     company,
@@ -153,16 +156,36 @@ app.put("/api/userProfile/:id", async (req, res) => {
   // Convert empty strings to NULL for numerical fields
   const sanitizedGraduationYear = graduationYear ? graduationYear : null;
 
-  // Construct query
   const query = `
-    UPDATE users 
-    SET username=?, phone=?, jobTitle=?, company=?, experience=?, skills=?, degree=?, 
-        university=?, graduationYear=?, previousRole=?, duration=? 
-    WHERE id=?
-  `;
+    UPDATE users
+    SET name = ?,
+        email = ?,
+        phone = ?,
+        jobTitle = ?,
+        company = ?,
+        experience = ?,
+        skills = ?,
+        degree = ?,
+        university = ?,
+        graduationYear = ?,
+        previousRole = ?,
+        duration = ?
+    WHERE
+        id = ?`;
   const values = [
-    name, phone, jobTitle, company, experience, skills, degree,
-    university, sanitizedGraduationYear, previousRole, duration, userId,
+    name,
+    email,
+    phone,
+    jobTitle,
+    company,
+    experience,
+    skills,
+    degree,
+    university,
+    sanitizedGraduationYear,
+    previousRole,
+    duration,
+    userId,
   ];
 
   try {
@@ -177,47 +200,24 @@ app.put("/api/userProfile/:id", async (req, res) => {
   }
 });
 
+// API Endpoint to Fetch Profile
+app.get("/api/userProfile/:userId", authenticateToken, (req, res) => {
+  const userId = req.params.userId;
+  const query = `
+    SELECT id, name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration 
+    FROM users 
+    WHERE id = ?`;
 
-
-app.put("/api/userProfile/:id", (req, res) => {
-  const userId = req.params.id;
-  const {
-    name,
-    phone,
-    jobTitle,
-    company,
-    experience,
-    skills,
-    degree,
-    university,
-    graduationYear,
-    previousRole,
-    duration,
-  } = req.body;
-
-  db.query(
-    "UPDATE users SET username=?, phone=?, jobTitle=?, company=?, experience=?, skills=?, degree=?, university=?, graduationYear=?, previousRole=?, duration=? WHERE id=?",
-    [
-      name,
-      phone,
-      jobTitle,
-      company,
-      experience,
-      skills,
-      degree,
-      university,
-      graduationYear,
-      previousRole,
-      duration,
-      userId,
-    ],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ message: "Profile updated successfully" });
+  db.query(query, [userId], (error, results) => {
+    if (error) {
+      console.error("Database error:", error);
+      return res.status(500).json({ message: "Database error" });
     }
-  );
+    if (results.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(results[0]);
+  });
 });
 
 // API Route to Verify JWT Token
@@ -235,7 +235,9 @@ function authenticateToken(req, res, next) {
   }
 
   if (blacklistedTokens.has(token)) {
-    return res.status(403).json({ error: "Session invalid, please login again" });
+    return res
+      .status(403)
+      .json({ error: "Session invalid, please login again" });
   }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {

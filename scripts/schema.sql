@@ -14,6 +14,7 @@ CREATE TABLE users (
   username VARCHAR(50) NOT NULL UNIQUE,
   email VARCHAR(100) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
+  name VARCHAR(50) NULL,
   phone VARCHAR(20) NULL, -- Added phone number
   jobTitle VARCHAR(100) NULL, -- Job title
   company VARCHAR(100) NULL, -- Company name
