@@ -1,0 +1,11 @@
+<form action="http://localhost:5001/api/register" method="POST">
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <select name="role" required>
+      <option value="client">Client</option>
+      <option value="fixer">Fixer</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Register</button>
+  </form>
