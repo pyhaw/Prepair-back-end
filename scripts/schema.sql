@@ -26,6 +26,7 @@ CREATE TABLE users (
   previousRole VARCHAR(100) NULL, -- Previous job role
   duration VARCHAR(50) NULL, -- Duration of previous role
   role ENUM('admin', 'client', 'fixer') NOT NULL, -- Differentiates user roles
+  profilePicture VARCHAR(255) NULL, --  File path of profile picture
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
