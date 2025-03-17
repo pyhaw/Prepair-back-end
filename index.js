@@ -225,6 +225,47 @@ app.get("/api/auth/verify", authenticateToken, (req, res) => {
   res.json({ valid: true, user: req.user });
 });
 
+// API Route to Create a New Job Posting
+app.post("/api/job-postings", authenticateToken, async (req, res) => {
+  try {
+    const { client_id, title, description, location, urgency, date, min_budget, max_budget, notify } = req.body;
+
+    console.log("📡 Received Job Posting Request:", req.body);
+
+    // Validate required fields
+    if (!client_id || !title || !description || !location || !urgency || !date) {
+      console.error("❌ Missing required fields");
+      return res.status(400).json({ error: "All required fields must be provided." });
+    }
+
+    // Insert job posting into database
+    const query = `
+      INSERT INTO job_postings (client_id, title, description, location, urgency, date, min_budget, max_budget, notify) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+    `;
+
+    const values = [
+      client_id,
+      title,
+      description,
+      location,
+      urgency,
+      date,
+      min_budget ? parseFloat(min_budget) : null,
+      max_budget ? parseFloat(max_budget) : null,
+      notify ? 1 : 0,
+    ];
+
+    const [result] = await db.promise().query(query, values);
+    console.log("✅ Job Posting Created:", result.insertId);
+
+    res.status(201).json({ message: "Job request created successfully!", job_id: result.insertId });
+  } catch (error) {
+    console.error("🔥 Error inserting job request:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
