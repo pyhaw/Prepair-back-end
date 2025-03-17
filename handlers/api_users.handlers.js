@@ -11,6 +11,8 @@ const {
 
 const bcrypt = require("bcrypt"); // Import bcrypt for hashing
 
+const jwt = require("jsonwebtoken");
+
 // Register a new user
 async function registerUser(req, res) {
     try {
@@ -84,7 +86,7 @@ async function loginUser(req, res) {
         // Generate JWT token
         const jwt = require("jsonwebtoken");
         const token = jwt.sign(
-            { userId: user.id, name: user.username, role: user.role },
+            { id: user.id, name: user.username, role: user.role },
             process.env.JWT_SECRET
         );
 
