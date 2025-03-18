@@ -51,18 +51,18 @@ CREATE TABLE reviews (
   FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Insert a placeholder review
-INSERT INTO reviews (client_id, fixer_id, rating, comment)
-VALUES (2, 1, 5, 'Great service!');
-
--- ======================================
--- Create Job Postings Table
--- ======================================
+-- Job Postings Table (Updated)
 CREATE TABLE job_postings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   client_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
+  location VARCHAR(255) NOT NULL, -- ✅ Added
+  urgency ENUM('Low', 'Medium', 'High') NOT NULL, -- ✅ Added
+  date DATE NOT NULL, -- ✅ Added
+  min_budget DECIMAL(10,2) DEFAULT NULL, -- ✅ Added
+  max_budget DECIMAL(10,2) DEFAULT NULL, -- ✅ Added
+  notify BOOLEAN DEFAULT 0, -- ✅ Added
   status ENUM('open', 'in_progress', 'completed') DEFAULT 'open',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
