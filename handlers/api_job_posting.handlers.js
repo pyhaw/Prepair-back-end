@@ -56,4 +56,30 @@ const createJobPosting = async (req, res) => {
   }
 };
 
-module.exports = { createJobPosting };
+const fetchJobPosting = async (req, res) => {
+    try {
+      console.log("📡 Fetching Job Postings...");
+  
+      // Fetch all job postings from database
+      const query = `
+        SELECT id, client_id, title, description, location, urgency, date, min_budget, max_budget, notify, status, created_at
+        FROM job_postings
+        ORDER BY created_at DESC;
+      `;
+  
+      const [results] = await db.promise().query(query);
+  
+      if (!results.length) {
+        console.warn("⚠️ No job postings found.");
+        return res.status(404).json({ error: "No job postings available." });
+      }
+  
+      console.log("✅ Job Postings Retrieved:", results.length);
+      res.status(200).json(results);
+    } catch (error) {
+      console.error("🔥 Error fetching job postings:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+module.exports = { createJobPosting, fetchJobPosting };
