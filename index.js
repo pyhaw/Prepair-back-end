@@ -1,29 +1,32 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-
-// Middleware and server setup
-const app = express();
 const path = require("path");
-// Middleware to parse JSON and enable CORS
-app.use(express.json()); // For parsing application/json
+
+// Initialize Express app
+const app = express();
+
+// Middleware
+app.use(express.json()); // Parse JSON requests
 app.use(cors()); // Enable CORS
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Import routes
 const userRoutes = require("./routes/api_users.routes");
-const authRoutes = require("./routes/api_auth.routes"); // Import the new auth routes
+const authRoutes = require("./routes/api_auth.routes");
+const postsRoutes = require("./routes/api_posts.routes");
+const jobPostingsRoutes = require("./routes/api_job_postings.routes"); // Import job postings route
 
-// Use routes under the "/api" prefix
+// Use routes under "/api" prefix
 app.use("/api", userRoutes);
-app.use("/api", authRoutes); // Add the auth routes
+app.use("/api", authRoutes);
+app.use("/api", postsRoutes);
+app.use("/api", jobPostingsRoutes); // Add job postings route
 
 // Root route to test server connection
 app.get("/", (req, res) => {
   res.send("Server is running successfully!");
 });
-
-const postsRoutes = require("./routes/api_posts.routes");
-app.use("/api", postsRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5001;
