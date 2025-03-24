@@ -114,67 +114,57 @@ async function getUserProfile(req, res) {
 
 // Update user profile
 async function updateUserProfileImpl(req, res) {
-    const fs = require("fs");
-    const path = require("path");
+  try {
     const userId = req.params.userId;
-  
-    try {
-      // Extract form data from the request
-      const { name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration } =
-        req.body;
-      const newProfilePicture = req.file ? req.file.filename : null; // New uploaded file
-  
-      // Validate required fields
-      if (!email || email.trim() === "") {
-        return res.status(400).json({ error: "Email cannot be blank" });
-      }
-  
-      // Fetch the existing user data to get the old profile picture filename
-      const existingUser = await getUserById(userId);
-      if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-  
-      // Delete the old profile picture if it exists and a new one is uploaded
-      const oldProfilePicture = existingUser.profilePicture;
-      if (oldProfilePicture && newProfilePicture) {
-        const filePath = path.join(__dirname, "../uploads", oldProfilePicture);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath); // Delete the old file
-        }
-      }
-  
-      // Prepare updates object
-      const updates = {
-        name,
-        email,
-        phone,
-        jobTitle,
-        company,
-        experience,
-        skills,
-        degree,
-        university,
-        graduationYear: graduationYear || null,
-        previousRole,
-        duration,
-        profilePicture: newProfilePicture || oldProfilePicture, // Use new or keep old
-      };
-  
-      // Call the database function to update the user profile
-      const success = await updateUserProfile(userId, updates);
-  
-      if (!success) {
-        return res.status(404).json({ error: "User not found" });
-      }
-  
-      // Return success response
-      res.json({ message: "Profile updated successfully" });
-    } catch (error) {
-      console.error("Error updating profile:", error.message);
-      res.status(500).json({ error: "Internal server error" });
+    const { name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration } =
+      req.body;
+
+    // Fetch existing user
+    const existingUser = await getUserById(userId);
+    if (!existingUser) {
+      return res.status(404).json({ error: "User not found" });
     }
+
+    let newProfilePictureUrl = existingUser.profilePicture; // Default to existing image
+
+    // If the frontend sends a new image URL, update it
+    if (req.body.profilePicture) {
+      newProfilePictureUrl = req.body.profilePicture;
+    }
+
+    // Prepare update object
+    const updates = {
+      name,
+      email,
+      phone,
+      jobTitle,
+      company,
+      experience,
+      skills,
+      degree,
+      university,
+      graduationYear: graduationYear || null,
+      previousRole,
+      duration,
+      profilePicture: newProfilePictureUrl, // Store Cloudinary URL
+    };
+
+    console.log(updates)
+
+    // Update user in database
+    const success = await updateUserProfile(userId, updates);
+    if (!success) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "Profile updated successfully", profilePicture: newProfilePictureUrl });
+  } catch (error) {
+    console.error("Error updating profile:", error.message);
+    res.status(500).json({ error: "Internal server error" });
   }
+}
+
+module.exports = { updateUserProfileImpl };
 
 // Delete a user
 async function deleteUserHandler(req, res) {
