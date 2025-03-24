@@ -1,6 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { createJobPosting, fetchJobPosting, fetchJobPostingByUserId } = require("../handlers/api_job_posting.handlers");
+const {
+  createJobPosting,
+  fetchJobPosting,
+  fetchJobPostingByUserId,
+  createJobBid,
+  fetchJobBids,
+  fetchActiveBidsForFixer,
+  updateJobPosting,
+  updateJobBid,
+} = require("../handlers/api_job_posting.handlers");
 const { authenticateToken } = require("../middleware/auth");
 
 // Ensure Express Router is properly initialized
@@ -15,6 +24,13 @@ router.get("/job-postings", authenticateToken, fetchJobPosting);
 
 // Route to fetch job postings by user ID
 router.get("/job-postings/:userId", fetchJobPostingByUserId);
+router.post("/job-bids", authenticateToken, createJobBid);
+
+router.get("/job/:id/bids", authenticateToken, fetchJobBids);
+
+router.get("/job-bids", authenticateToken, fetchActiveBidsForFixer);
+router.put("/job-bids/:id", authenticateToken, updateJobBid);
+router.put("/job-postings/:id", authenticateToken, updateJobPosting);
 
 // Export the router correctly
 module.exports = router;

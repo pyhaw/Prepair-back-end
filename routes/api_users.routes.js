@@ -23,12 +23,16 @@ const { uploadSingle } = require("../middleware/upload"); // Import the middlewa
 router.post("/register", registerUser); // Register a new user
 router.post("/login", loginUser); // Login a user
 router.get("/userProfile/:userId", authenticateToken, getUserProfile); // Get user profile
-router.put("/userProfile/:userId", authenticateToken, uploadSingle, updateUserProfileImpl);
+router.put(
+  "/userProfile/:userId",
+  authenticateToken,
+  uploadSingle,
+  updateUserProfileImpl
+);
 router.delete("/users/:userId", authenticateToken, deleteUserHandler); // Delete a user
 router.get("/users", getAllUsersHandler); // Get all users (Admin)
 router.post("/forgot-password", sendOTPToEmail);
 router.post("/verifyOtp", verifyOtp);
-router.post("/reset-password", resetPassword)
-
+router.post("/reset-password", resetPassword);
 
 module.exports = router;
