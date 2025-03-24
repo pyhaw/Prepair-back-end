@@ -16,12 +16,17 @@ const userRoutes = require("./routes/api_users.routes");
 const authRoutes = require("./routes/api_auth.routes");
 const postsRoutes = require("./routes/api_posts.routes");
 const jobPostingsRoutes = require("./routes/api_job_postings.routes"); // Import job postings route
+const chatRoutes = require("./routes/api_chatbot.routes");
+
+// Middleware to parse JSON bodies
+app.use(express.json());
 
 // Use routes under "/api" prefix
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", postsRoutes);
 app.use("/api", jobPostingsRoutes); // Add job postings route
+app.use("/api", chatRoutes);
 
 // Root route to test server connection
 app.get("/", (req, res) => {

@@ -11,7 +11,6 @@ router.post("/posts", authenticateToken, createPost);
 // GET /api/posts - Retrieve all forum postings
 router.get("/posts", async (req, res) => {
   try {
-    // Query the forum_postings table and alias content as description
     const [posts] = await db.promise().query(
       `SELECT 
          p.id, 
@@ -42,10 +41,12 @@ router.get("/posts", async (req, res) => {
 router.get("/posts/:postId", async (req, res) => {
   try {
     const postId = req.params.postId;
-    const [posts] = await db.promise().query(
-      "SELECT id, title, content AS description, created_at FROM forum_postings WHERE id = ?",
-      [postId]
-    );
+    const [posts] = await db
+      .promise()
+      .query(
+        "SELECT id, title, content AS description, created_at FROM forum_postings WHERE id = ?",
+        [postId]
+      );
     if (posts.length === 0) {
       return res.status(404).json({ error: "Post not found" });
     }
@@ -85,27 +86,29 @@ router.post("/posts/:postId/replies", authenticateToken, async (req, res) => {
   try {
     const { content } = req.body;
     const postId = req.params.postId;
-    const userId = req.user.id;
+    // Use fallback if req.user.id is missing
+    const userId = req.user.id || req.user.userId;
 
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Reply content is required" });
     }
 
     // Check if post exists
-    const [posts] = await db.promise().query(
-      "SELECT id FROM forum_postings WHERE id = ?",
-      [postId]
-    );
-    
+    const [posts] = await db
+      .promise()
+      .query("SELECT id FROM forum_postings WHERE id = ?", [postId]);
+
     if (posts.length === 0) {
       return res.status(404).json({ error: "Post not found" });
     }
 
     // Insert reply
-    const [result] = await db.promise().query(
-      "INSERT INTO post_replies (post_id, user_id, content) VALUES (?, ?, ?)",
-      [postId, userId, content]
-    );
+    const [result] = await db
+      .promise()
+      .query(
+        "INSERT INTO post_replies (post_id, user_id, content) VALUES (?, ?, ?)",
+        [postId, userId, content]
+      );
 
     // Fetch the newly created reply with author info
     const [replies] = await db.promise().query(
@@ -128,44 +131,43 @@ router.post("/posts/:postId/vote", authenticateToken, async (req, res) => {
   try {
     const { voteType } = req.body;
     const postId = req.params.postId;
-    const userId = req.user.id;
+    const userId = req.user.id || req.user.userId;
 
-    if (!['up', 'down'].includes(voteType)) {
+    if (!["up", "down"].includes(voteType)) {
       return res.status(400).json({ error: "Invalid vote type" });
     }
 
     // Check if post exists
-    const [posts] = await db.promise().query(
-      "SELECT id FROM forum_postings WHERE id = ?",
-      [postId]
-    );
-    
+    const [posts] = await db
+      .promise()
+      .query("SELECT id FROM forum_postings WHERE id = ?", [postId]);
+
     if (posts.length === 0) {
       return res.status(404).json({ error: "Post not found" });
     }
 
     // Check if user has already voted on this post
-    const [existingVotes] = await db.promise().query(
-      "SELECT id, vote_type FROM votes WHERE user_id = ? AND post_id = ?",
-      [userId, postId]
-    );
+    const [existingVotes] = await db
+      .promise()
+      .query(
+        "SELECT id, vote_type FROM votes WHERE user_id = ? AND post_id = ?",
+        [userId, postId]
+      );
 
     let query;
     let params;
 
     if (existingVotes.length > 0) {
       if (existingVotes[0].vote_type === voteType) {
-        // Toggle off vote if same vote type
         query = "DELETE FROM votes WHERE id = ?";
         params = [existingVotes[0].id];
       } else {
-        // Update vote if different type
         query = "UPDATE votes SET vote_type = ? WHERE id = ?";
         params = [voteType, existingVotes[0].id];
       }
     } else {
-      // Insert new vote
-      query = "INSERT INTO votes (user_id, post_id, vote_type) VALUES (?, ?, ?)";
+      query =
+        "INSERT INTO votes (user_id, post_id, vote_type) VALUES (?, ?, ?)";
       params = [userId, postId, voteType];
     }
 
@@ -193,27 +195,28 @@ router.post("/replies/:replyId/vote", authenticateToken, async (req, res) => {
   try {
     const { voteType } = req.body;
     const replyId = req.params.replyId;
-    const userId = req.user.id;
+    const userId = req.user.id || req.user.userId;
 
-    if (!['up', 'down'].includes(voteType)) {
+    if (!["up", "down"].includes(voteType)) {
       return res.status(400).json({ error: "Invalid vote type" });
     }
 
     // Check if reply exists
-    const [replies] = await db.promise().query(
-      "SELECT id FROM post_replies WHERE id = ?",
-      [replyId]
-    );
-    
+    const [replies] = await db
+      .promise()
+      .query("SELECT id FROM post_replies WHERE id = ?", [replyId]);
+
     if (replies.length === 0) {
       return res.status(404).json({ error: "Reply not found" });
     }
 
     // Check if user has already voted on this reply
-    const [existingVotes] = await db.promise().query(
-      "SELECT id, vote_type FROM votes WHERE user_id = ? AND reply_id = ?",
-      [userId, replyId]
-    );
+    const [existingVotes] = await db
+      .promise()
+      .query(
+        "SELECT id, vote_type FROM votes WHERE user_id = ? AND reply_id = ?",
+        [userId, replyId]
+      );
 
     let query;
     let params;
@@ -227,7 +230,8 @@ router.post("/replies/:replyId/vote", authenticateToken, async (req, res) => {
         params = [voteType, existingVotes[0].id];
       }
     } else {
-      query = "INSERT INTO votes (user_id, reply_id, vote_type) VALUES (?, ?, ?)";
+      query =
+        "INSERT INTO votes (user_id, reply_id, vote_type) VALUES (?, ?, ?)";
       params = [userId, replyId, voteType];
     }
 
@@ -254,15 +258,15 @@ router.post("/replies/:replyId/vote", authenticateToken, async (req, res) => {
 router.get("/posts/:postId/user-votes", authenticateToken, async (req, res) => {
   try {
     const postId = req.params.postId;
-    const userId = req.user.id;
+    const userId = req.user.id || req.user.userId;
 
-    // Get post vote
-    const [postVotes] = await db.promise().query(
-      "SELECT vote_type FROM votes WHERE user_id = ? AND post_id = ?",
-      [userId, postId]
-    );
+    const [postVotes] = await db
+      .promise()
+      .query("SELECT vote_type FROM votes WHERE user_id = ? AND post_id = ?", [
+        userId,
+        postId,
+      ]);
 
-    // Get reply votes for this post
     const [replyVotes] = await db.promise().query(
       `SELECT v.reply_id, v.vote_type
        FROM votes v
@@ -271,13 +275,11 @@ router.get("/posts/:postId/user-votes", authenticateToken, async (req, res) => {
       [userId, postId]
     );
 
-    // Format the response
     const votes = {
-      post: postVotes.length > 0 ? postVotes[0].vote_type : null
+      post: postVotes.length > 0 ? postVotes[0].vote_type : null,
     };
 
-    // Add reply votes
-    replyVotes.forEach(vote => {
+    replyVotes.forEach((vote) => {
       votes[`reply_${vote.reply_id}`] = vote.vote_type;
     });
 
@@ -287,5 +289,137 @@ router.get("/posts/:postId/user-votes", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// PUT /api/posts/:postId - Edit a forum posting
+router.put("/posts/:postId", authenticateToken, async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const { title, content, category } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ error: "Title and content are required" });
+    }
+
+    const [posts] = await db
+      .promise()
+      .query("SELECT id, client_id FROM forum_postings WHERE id = ?", [postId]);
+    if (posts.length === 0) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Optionally, add a check that (req.user.id || req.user.userId) matches posts[0].client_id
+
+    await db
+      .promise()
+      .query(
+        "UPDATE forum_postings SET title = ?, content = ?, category = ? WHERE id = ?",
+        [title, content, category || "general", postId]
+      );
+
+    const [updatedPosts] = await db
+      .promise()
+      .query(
+        "SELECT id, title, content AS description, created_at, category FROM forum_postings WHERE id = ?",
+        [postId]
+      );
+    res.json({ post: updatedPosts[0] });
+  } catch (err) {
+    console.error("Error updating post:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /api/posts/:postId - Delete a forum posting
+router.delete("/posts/:postId", authenticateToken, async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const [posts] = await db
+      .promise()
+      .query("SELECT id FROM forum_postings WHERE id = ?", [postId]);
+    if (posts.length === 0) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+    await db
+      .promise()
+      .query("DELETE FROM forum_postings WHERE id = ?", [postId]);
+    res.json({ message: "Post deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting post:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT /api/posts/:postId/replies/:replyId - Edit a reply
+router.put(
+  "/posts/:postId/replies/:replyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { postId, replyId } = req.params;
+      const { content } = req.body;
+
+      if (!content || content.trim() === "") {
+        return res.status(400).json({ error: "Reply content is required" });
+      }
+
+      const [replies] = await db
+        .promise()
+        .query(
+          "SELECT id, user_id FROM post_replies WHERE id = ? AND post_id = ?",
+          [replyId, postId]
+        );
+      if (replies.length === 0) {
+        return res.status(404).json({ error: "Reply not found" });
+      }
+      // Optionally, ensure (req.user.id || req.user.userId) matches replies[0].user_id
+
+      await db
+        .promise()
+        .query("UPDATE post_replies SET content = ? WHERE id = ?", [
+          content,
+          replyId,
+        ]);
+
+      const [updatedReplies] = await db.promise().query(
+        `SELECT r.id, r.content, r.created_at, u.username as author, 0 as upvotes, 0 as downvotes
+       FROM post_replies r
+       JOIN users u ON r.user_id = u.id
+       WHERE r.id = ?`,
+        [replyId]
+      );
+      res.json({ reply: updatedReplies[0] });
+    } catch (err) {
+      console.error("Error updating reply:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// DELETE /api/posts/:postId/replies/:replyId - Delete a reply
+router.delete(
+  "/posts/:postId/replies/:replyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { postId, replyId } = req.params;
+      const [replies] = await db
+        .promise()
+        .query("SELECT id FROM post_replies WHERE id = ? AND post_id = ?", [
+          replyId,
+          postId,
+        ]);
+      if (replies.length === 0) {
+        return res.status(404).json({ error: "Reply not found" });
+      }
+      await db
+        .promise()
+        .query("DELETE FROM post_replies WHERE id = ?", [replyId]);
+      res.json({ message: "Reply deleted successfully" });
+    } catch (err) {
+      console.error("Error deleting reply:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 module.exports = router;

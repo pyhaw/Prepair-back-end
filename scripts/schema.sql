@@ -37,6 +37,20 @@ VALUES
   ('testuser', 'testuser@gmail.com', 'password', 'fixer', 'https://via.placeholder.com/40'),
   ('clientuser', 'client@gmail.com', 'password', 'client', 'https://via.placeholder.com/40');
 
+
+-- ======================================
+-- Create OTP Table
+-- ======================================
+CREATE TABLE otp (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  otp VARCHAR(6) NOT NULL, -- Store OTP as a string (e.g., "1234")
+  expires_at TIMESTAMP NOT NULL, -- Expiration time
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
 -- ======================================
 -- Create Reviews Table
 -- ======================================
@@ -69,8 +83,10 @@ CREATE TABLE job_postings (
 );
 
 -- Insert a placeholder job posting
-INSERT INTO job_postings (client_id, title, description, status)
-VALUES (2, 'Kitchen Renovation', 'Need to renovate my kitchen on a budget.', 'open');
+INSERT INTO job_postings 
+(client_id, title, description, location, urgency, date, min_budget, max_budget, notify)
+VALUES 
+(1, 'Test', 'Test description', 'Central', 'Medium', '2024-01-01', 100, 500, 0);
 
 -- ======================================
 -- Create Job Bids Table
@@ -80,6 +96,7 @@ CREATE TABLE job_bids (
   job_posting_id INT NOT NULL,
   fixer_id INT NOT NULL,
   bid_amount DECIMAL(10, 2) NOT NULL,
+  description TEXT,
   status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
@@ -103,10 +120,6 @@ CREATE TABLE completed_jobs (
   FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE SET NULL
 );
-
--- (Optional) Insert a placeholder completed job if needed
--- INSERT INTO completed_jobs (job_posting_id, fixer_id, review_id)
--- VALUES (1, 1, 1);
 
 -- ======================================
 -- Create Forum Postings Table
@@ -167,6 +180,19 @@ CREATE TABLE votes (
     (post_id IS NOT NULL AND reply_id IS NULL)
   )
 );
+
+-- ======================================
+-- Create Chat History 
+-- ======================================
+
+CREATE TABLE chat_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,           
+  sender ENUM('user', 'chatbot') NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- ======================================
 -- Create Indexes for Performance
