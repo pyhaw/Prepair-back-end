@@ -1,4 +1,4 @@
-const { db } = require("../lib/database");
+const { db,} = require("../lib/database");
 
 const createJobPosting = async (req, res) => {
   try {
@@ -82,4 +82,38 @@ const fetchJobPosting = async (req, res) => {
     }
   };
 
-module.exports = { createJobPosting, fetchJobPosting };
+  const fetchJobPostingByUserId = async (req, res) => {
+    try {
+      const { userId } = req.params; // Extract userId from the URL parameters
+  
+      console.log(`📡 Fetching Job Postings for User ID: ${userId}`);
+  
+      // Validate userId
+      if (!userId || isNaN(parseInt(userId, 10))) {
+        console.error("❌ Invalid user ID");
+        return res.status(400).json({ error: "Invalid user ID." });
+      }
+  
+      // Fetch job postings for the given userId from the database
+      const query = `
+        SELECT id, client_id, title, description, location, urgency, date, min_budget, max_budget, notify, status, created_at
+        FROM job_postings
+        WHERE client_id = ?
+        ORDER BY created_at DESC;
+      `;
+  
+      const [results] = await db.promise().query(query, [userId]);
+  
+      if (!results.length) {
+        console.warn(`⚠️ No job postings found for User ID: ${userId}`);
+        return res.status(404).json({ error: "No job postings available for this user." });
+      }
+  
+      console.log(`✅ Job Postings Retrieved for User ID ${userId}:`, results.length);
+      res.status(200).json(results); // Return the fetched job postings
+    } catch (error) {
+      console.error("🔥 Error fetching job postings by user ID:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+module.exports = { createJobPosting, fetchJobPosting, fetchJobPostingByUserId };
