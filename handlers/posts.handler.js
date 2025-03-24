@@ -15,26 +15,55 @@ function getRelativeTime(date) {
 
 const createPost = async (req, res) => {
   try {
-    const { title, description, category } = req.body;
-    const userId = req.user.id;
-
+    const { title, description, category = "general" } = req.body;
+    
+    // Debug logging to see what's in req.user
+    console.log("User from token:", req.user);
+    
+    // Check if user ID exists
+    if (!req.user || !req.user.userId) {
+      console.error("Missing user ID in token payload");
+      return res.status(401).json({ error: "Authentication error: User ID missing" });
+    }
+    
+    const userId = req.user.userId;
+    
+    // Validate required fields
     if (!title || !description) {
-      return res.status(400).json({ error: "Title and description are required" });
+      return res.status(400).json({ error: "Title and content are required" });
     }
 
-    // Insert the post using the category field
+    // Insert post into database
     const [result] = await db.promise().query(
       "INSERT INTO forum_postings (client_id, title, content, category) VALUES (?, ?, ?, ?)",
-      [userId, title, description, category || 'general']
+      [userId, title, description, category]
     );
 
-    res.status(201).json({
-      message: "Post created successfully",
-      postId: result.insertId
-    });
+    const newPostId = result.insertId;
+
+    // Return the created post data
+    const [newPosts] = await db.promise().query(
+      `SELECT 
+        p.id, 
+        p.title, 
+        p.content AS description, 
+        p.created_at, 
+        p.category,
+        u.username AS author,
+        u.profilePicture AS avatar,
+        0 AS replyCount,
+        0 AS upvotes,
+        0 AS downvotes
+      FROM forum_postings p
+      LEFT JOIN users u ON p.client_id = u.id
+      WHERE p.id = ?`,
+      [newPostId]
+    );
+
+    res.status(201).json({ post: newPosts[0] });
   } catch (err) {
     console.error("Error creating post:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to create post" });
   }
 };
 

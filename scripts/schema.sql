@@ -69,8 +69,10 @@ CREATE TABLE job_postings (
 );
 
 -- Insert a placeholder job posting
-INSERT INTO job_postings (client_id, title, description, status)
-VALUES (2, 'Kitchen Renovation', 'Need to renovate my kitchen on a budget.', 'open');
+INSERT INTO job_postings 
+(client_id, title, description, location, urgency, date, min_budget, max_budget, notify)
+VALUES 
+(1, 'Test', 'Test description', 'Central', 'Medium', '2024-01-01', 100, 500, 0);
 
 -- ======================================
 -- Create Job Bids Table
@@ -167,6 +169,19 @@ CREATE TABLE votes (
     (post_id IS NOT NULL AND reply_id IS NULL)
   )
 );
+
+-- ======================================
+-- Create Chat History 
+-- ======================================
+
+CREATE TABLE chat_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,           
+  sender ENUM('user', 'chatbot') NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 -- ======================================
 -- Create Indexes for Performance
