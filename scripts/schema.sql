@@ -96,6 +96,7 @@ CREATE TABLE job_bids (
   job_posting_id INT NOT NULL,
   fixer_id INT NOT NULL,
   bid_amount DECIMAL(10, 2) NOT NULL,
+  description TEXT,
   status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
