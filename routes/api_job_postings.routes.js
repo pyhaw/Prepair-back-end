@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { JobPosting } = require("../models"); // Adjust path if needed
+//const { JobPosting } = require("../models"); // Adjust path if needed
 const {
   createJobPosting,
   fetchJobPosting,
