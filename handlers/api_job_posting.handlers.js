@@ -240,7 +240,7 @@ const fetchJobBids = async (req, res) => {
     const [results] = await db.promise().query(query, [id]);
 
     console.log(`✅ Retrieved ${results.length} bids for job ID ${id}`);
-    res.status(200).json({ bids: results }); // Return object with bids property
+    res.status(200).json(results); // Return object with bids property
   } catch (error) {
     console.error("🔥 Error fetching job bids:", error);
     res.status(500).json({ error: "Internal Server Error" });
