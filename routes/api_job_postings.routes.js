@@ -1,4 +1,4 @@
-const express = require("express");
+/**const express = require("express");
 const router = express.Router();
 //const { JobPosting } = require("../models"); // Adjust path if needed
 const {
@@ -55,4 +55,4 @@ router.delete("/job-postings/:id", authenticateToken, async (req, res) => {
 });
 
 // Export the router correctly
-module.exports = router;
+module.exports = router;**/
