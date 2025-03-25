@@ -422,6 +422,29 @@ const updateJobBid = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+const deletePosting = async(req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+  
+      const job = await findJobPostingByPk(id);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+  
+      if (!job.client_id || job.client_id !== userId) {
+        return res.status(403).json({ error: "You are not authorized to delete this request" });
+      }
+  
+      await job.destroy();
+      res.status(204).end();
+    } catch (err) {
+      console.error("Error deleting job:", err);
+      res.status(500).json({ error: "Server error while trying to delete job" });
+    }
+}
+
 module.exports = {
   createJobPosting,
   fetchJobPosting,
@@ -431,4 +454,5 @@ module.exports = {
   fetchActiveBidsForFixer,
   updateJobPosting,
   updateJobBid,
+  deletePosting,
 };
