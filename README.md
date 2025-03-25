@@ -15,6 +15,11 @@ DB_NAME=prepair_db
 DB_PORT=3306
 PORT=5001
 JWT_SECRET=your-strong-secret-key
+
+EMAIL_HOST= "Your email host", eg: "smtp.gmail.com" 
+EMAIL_PORT=465
+EMAIL_USER="your email address"
+EMAIL_PASS="your email app password (Login to your email and go to create new app password in settings)"
 ```
 ## 3. Setup Database
 Run the `schema.sql` script to create the required tables in your MySQL database:
