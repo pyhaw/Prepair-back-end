@@ -37,7 +37,7 @@ router.delete("/job-postings/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const job = await JobPosting.findByPk(id);
+    //const job = await JobPosting.findByPk(id);
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
