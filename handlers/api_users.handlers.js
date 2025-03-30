@@ -169,7 +169,6 @@ async function resetPassword(req, res) {
 
 // Update user profile
 async function updateUserProfileImpl(req, res) {
-
   try {
     const userId = req.params.userId;
     const { name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration } =
