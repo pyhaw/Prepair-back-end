@@ -260,11 +260,11 @@ const fetchActiveBidsForFixer = async (req, res) => {
 
     // Fetch active job bids with status 'pending' for the given fixer_id
     const query = `
-      SELECT jb.id, jb.job_posting_id, jb.fixer_id, jb.bid_amount, jb.description, 
+      SELECT j.id, j.description, 
              jb.status, jb.created_at, j.title, j.location, j.urgency, j.min_budget, j.max_budget
       FROM job_bids jb
       JOIN job_postings j ON jb.job_posting_id = j.id
-      WHERE jb.fixer_id = ? AND jb.status = 'pending'
+      WHERE jb.fixer_id = ?
       ORDER BY jb.created_at DESC;
     `;
 
@@ -423,27 +423,74 @@ const updateJobBid = async (req, res) => {
   }
 };
 
-const deletePosting = async(req, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.id;
-  
-      const job = await findJobPostingByPk(id);
-      if (!job) {
-        return res.status(404).json({ error: "Job not found" });
-      }
-  
-      if (!job.client_id || job.client_id !== userId) {
-        return res.status(403).json({ error: "You are not authorized to delete this request" });
-      }
-  
-      await job.destroy();
-      res.status(204).end();
-    } catch (err) {
-      console.error("Error deleting job:", err);
-      res.status(500).json({ error: "Server error while trying to delete job" });
+const deletePosting = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const job = await findJobPostingByPk(id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
     }
-}
+
+    if (!job.client_id || job.client_id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You are not authorized to delete this request" });
+    }
+
+    await job.destroy();
+    res.status(204).end();
+  } catch (err) {
+    console.error("Error deleting job:", err);
+    res.status(500).json({ error: "Server error while trying to delete job" });
+  }
+};
+
+const acceptJobBid = async (req, res) => {
+  const { bidId, jobId } = req.body;
+  if (!bidId || !jobId) {
+    return res.status(400).json({ error: "Missing bidId or jobId" });
+  }
+  const updateQuery = `
+  UPDATE job_bids 
+  SET status = 'accepted' 
+  WHERE id = ? AND job_posting_id = ?`;
+  await db.promise().query(updateQuery, [bidId, jobId]);
+
+  //delete all other queries
+  const deleteOtherBidsQuery = `
+            DELETE FROM job_bids 
+            WHERE job_posting_id = ? AND id != ?`;
+
+  await db.promise().query(deleteOtherBidsQuery, [jobId, bidId]);
+
+  const updateJobStatusQuery = `
+  UPDATE job_postings 
+  SET status = 'in_progress' 
+  WHERE id = ?`;
+
+  await db.promise().query(updateJobStatusQuery, [jobId]);
+
+  res
+    .status(200)
+    .json({ message: "Bid accepted, other bids removed, and job updated." });
+};
+
+const completeJob = async (req, res) => {
+  const { bidId, jobId } = req.body;
+  if (!bidId || !jobId) {
+    return res.status(400).json({ error: "Missing bidId or jobId" });
+  }
+  const updateJobStatusQuery = `
+  UPDATE job_postings 
+  SET status = 'completed' 
+  WHERE id = ?`;
+
+  await db.promise().query(updateJobStatusQuery, [jobId]);
+
+  res.status(200).json({ message: "Job completed." });
+};
 
 module.exports = {
   createJobPosting,
@@ -455,4 +502,6 @@ module.exports = {
   updateJobPosting,
   updateJobBid,
   deletePosting,
+  acceptJobBid,
+  completeJob,
 };
