@@ -188,8 +188,20 @@ async function resetPassword(req, res) {
 async function updateUserProfileImpl(req, res) {
   try {
     const userId = req.params.userId;
-    const { name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration } =
-      req.body;
+    const {
+      username,
+      email,
+      phone,
+      jobTitle,
+      company,
+      experience,
+      skills,
+      degree,
+      university,
+      graduationYear,
+      previousRole,
+      duration,
+    } = req.body;
 
     // Fetch existing user
     const existingUser = await getUserById(userId);
@@ -206,7 +218,7 @@ async function updateUserProfileImpl(req, res) {
 
     // Prepare update object
     const updates = {
-      name,
+      username,
       email,
       phone,
       jobTitle,
@@ -221,7 +233,7 @@ async function updateUserProfileImpl(req, res) {
       profilePicture: newProfilePictureUrl, // Store Cloudinary URL
     };
 
-    console.log(updates)
+    console.log(updates);
 
     // Update user in database
     const success = await updateUserProfile(userId, updates);
@@ -229,7 +241,10 @@ async function updateUserProfileImpl(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json({ message: "Profile updated successfully", profilePicture: newProfilePictureUrl });
+    res.json({
+      message: "Profile updated successfully",
+      profilePicture: newProfilePictureUrl,
+    });
   } catch (error) {
     console.error("Error updating profile:", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -345,7 +360,7 @@ module.exports = {
   getAllUsersHandler,
   sendOTPToEmail,
   verifyOtp,
-  resetPassword, 
+  resetPassword,
   updateUserProfileImpl,
   startUp,
 };
