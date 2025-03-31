@@ -32,3 +32,11 @@ node index.js
 Open 
 https://prepair-back-end.onrender.com/ to see the results
 
+## Production (Railway) Database
+
+The project is hosted on [Railway](https://railway.app). The backend connects to a hosted MySQL instance via environment variables.
+
+To access the Railway DB:
+```bash
+mysql -h hopper.proxy.rlwy.net -u root -p --port 31432
+```
