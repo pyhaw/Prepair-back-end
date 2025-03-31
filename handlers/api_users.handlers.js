@@ -83,6 +83,23 @@ async function registerUser(req, res) {
   }
 }
 
+//Startup Function (create accounts)
+async function startUp() {
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash("password", saltRounds);
+
+  // Create the user
+  if (!await userExistByUsername("fixer1")) {
+    await createUser("fixer1", "fixer1@gmail.com", hashedPassword, 'fixer');
+  }
+  if (!await userExistByUsername("client1")) {
+    await createUser("client1", "client1@gmail.com", hashedPassword, 'client');
+  }
+  if (!await userExistByUsername("admin1")) {
+    await createUser("admin1", "admin1@gmail.com", hashedPassword, 'admin');
+  }
+}
+
 // Login a user
 async function loginUser(req, res) {
   const { email, password } = req.body;
@@ -330,4 +347,5 @@ module.exports = {
   verifyOtp,
   resetPassword, 
   updateUserProfileImpl,
+  startUp,
 };
