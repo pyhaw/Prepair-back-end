@@ -1,6 +1,6 @@
-/**const express = require("express");
+const express = require("express");
 const router = express.Router();
-//const { JobPosting } = require("../models"); // Adjust path if needed
+const { JobPosting } = require("../models"); // Adjust path if needed
 const {
   createJobPosting,
   fetchJobPosting,
@@ -37,7 +37,7 @@ router.delete("/job-postings/:id", authenticateToken, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    //const job = await JobPosting.findByPk(id);
+    const job = await JobPosting.findByPk(id);
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
@@ -55,4 +55,4 @@ router.delete("/job-postings/:id", authenticateToken, async (req, res) => {
 });
 
 // Export the router correctly
-module.exports = router;**/
+module.exports = router;
