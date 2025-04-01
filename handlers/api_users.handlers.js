@@ -13,6 +13,8 @@ const {
   updateUserPassword,
 } = require("../lib/database");
 
+const { db } = require("../lib/database");
+
 const bcrypt = require("bcrypt"); // Import bcrypt for hashing
 const crypto = require("crypto");
 
@@ -350,6 +352,30 @@ async function verifyOtp(req, res) {
   }
 }
 
+const validateTargetUser = async (req, res) => {
+  const targetId = parseInt(req.params.targetId);
+  const currentUserId = parseInt(req.query.currentUserId);
+
+  if (!targetId || !currentUserId || targetId === currentUserId) {
+    return res.status(400).json({ valid: false, message: "Invalid user" });
+  }
+
+  try {
+    const [result] = await db
+      .promise()
+      .query(`SELECT id FROM users WHERE id = ?`, [targetId]);
+
+    if (result.length === 0) {
+      return res.status(404).json({ valid: false, message: "User not found" });
+    }
+
+    return res.status(200).json({ valid: true });
+  } catch (err) {
+    console.error("❌ Error validating user:", err);
+    return res.status(500).json({ valid: false, message: "Server error" });
+  }
+};
+
 // Export all functions
 module.exports = {
   registerUser,
@@ -362,5 +388,6 @@ module.exports = {
   verifyOtp,
   resetPassword,
   updateUserProfileImpl,
+  validateTargetUser,
   startUp,
 };
