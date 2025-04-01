@@ -134,9 +134,9 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     const [results] = await db.promise().query(query, [userId]);
 
-    // results.forEach((job) => {
-    //   job.images = job.images ? JSON.parse(job.images) : [];
-    // });
+    results.forEach((job) => {
+      job.images = job.images ? JSON.parse(job.images) : [];
+    });
 
     if (!results.length) {
       console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
