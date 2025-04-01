@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { JobPosting } = require("../models"); // Adjust path if needed
+const { JobPosting } = require("../index"); // Adjust path if needed
 const {
   createJobPosting,
   fetchJobPosting,
@@ -32,6 +32,31 @@ router.get("/job/:id/bids", authenticateToken, fetchJobBids);
 router.get("/job-bids", authenticateToken, fetchActiveBidsForFixer);
 router.put("/job-bids/:id", authenticateToken, updateJobBid);
 router.put("/job-postings/:id", authenticateToken, updateJobPosting);
+
+// PUT /api/job-postings/:id - Update an existing job posting
+router.put("/job-postings/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const updatedData = req.body;
+
+    const job = await JobPosting.findByPk(id);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    if (job.client_id !== userId) {
+      return res.status(403).json({ error: "You are not authorized to update this request" });
+    }
+
+    await job.update(updatedData);
+    res.status(200).json(job);
+  } catch (err) {
+    console.error("Error updating job:", err);
+    res.status(500).json({ error: "Server error while trying to update job" });
+  }
+});
+
 router.delete("/job-postings/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
