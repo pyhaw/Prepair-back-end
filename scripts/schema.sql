@@ -201,3 +201,29 @@ CREATE INDEX idx_post_replies_post_id ON post_replies(post_id);
 CREATE INDEX idx_votes_post_id ON votes(post_id);
 CREATE INDEX idx_votes_reply_id ON votes(reply_id);
 CREATE INDEX idx_votes_user_id ON votes(user_id);
+
+-- ======================================
+-- Create ChatRooms Table
+-- ======================================
+
+CREATE TABLE chat_rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user1_id INT NOT NULL,
+  user2_id INT NOT NULL,
+  UNIQUE KEY unique_pair (LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id)),
+  FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE private_messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  room_id VARCHAR(255) NOT NULL, -- Format: "11-12"
+  sender_id INT NOT NULL,
+  recipient_id INT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+);
