@@ -12,7 +12,8 @@ const {
   sendOTPToEmail,
   verifyOtp,
   resetPassword,
-  validateTargetUser
+  validateTargetUser,
+  getAllFixers
 } = require("../handlers/api_users.handlers");
 
 // Middleware for authentication
@@ -36,5 +37,8 @@ router.post("/forgot-password", sendOTPToEmail);
 router.post("/verifyOtp", verifyOtp);
 router.post("/reset-password", resetPassword);
 router.get("/users/validate/:targetId", validateTargetUser);
+router.get("/fixers", getAllFixers);
+router.get("/fixers/:userId", getUserProfile); // Reuse existing profile logic
+
 
 module.exports = router;

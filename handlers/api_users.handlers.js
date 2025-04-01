@@ -376,6 +376,17 @@ const validateTargetUser = async (req, res) => {
   }
 };
 
+async function getAllFixers(req, res) {
+  try {
+    const users = await getAllUsers(); // or a new function getUsersByRole('fixer')
+    const fixers = users.filter((user) => user.role === "fixer");
+    res.json(fixers);
+  } catch (error) {
+    console.error("Error fetching fixers:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
 // Export all functions
 module.exports = {
   registerUser,
@@ -390,4 +401,5 @@ module.exports = {
   updateUserProfileImpl,
   validateTargetUser,
   startUp,
+  getAllFixers,
 };
