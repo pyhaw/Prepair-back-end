@@ -1,11 +1,9 @@
-const path = require("path");
-const { writeFile } = require("fs/promises");
 const { db } = require("../lib/database");
 
 function getRelativeTime(date) {
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
-  
+
   if (diffInSeconds < 60) return "just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minute(s) ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour(s) ago`;
@@ -15,33 +13,42 @@ function getRelativeTime(date) {
 
 const createPost = async (req, res) => {
   try {
-    const { title, description, category = "general" } = req.body;
-    
-    // Debug logging to see what's in req.user
+    const { title, description, category = "general", images } = req.body;
+
     console.log("User from token:", req.user);
-    
-    // Check if user ID exists
+
+    // Validate user
     if (!req.user || !req.user.userId) {
       console.error("Missing user ID in token payload");
       return res.status(401).json({ error: "Authentication error: User ID missing" });
     }
-    
+
     const userId = req.user.userId;
-    
-    // Validate required fields
+
+    // Validate form inputs
     if (!title || !description) {
       return res.status(400).json({ error: "Title and content are required" });
     }
 
-    // Insert post into database
+    // Ensure images is an array
+    let sanitizedImages = [];
+
+    if (Array.isArray(images)) {
+      sanitizedImages = images;
+    } else if (typeof images === "string" && images.trim() !== "") {
+      sanitizedImages = [images]; // wrap string in array
+    }
+
+    // Insert into database
     const [result] = await db.promise().query(
-      "INSERT INTO forum_postings (client_id, title, content, category) VALUES (?, ?, ?, ?)",
-      [userId, title, description, category]
+      `INSERT INTO forum_postings (client_id, title, content, category, images)
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, title, description, category, JSON.stringify(sanitizedImages)]
     );
 
     const newPostId = result.insertId;
 
-    // Return the created post data
+    // Retrieve and return the newly created post
     const [newPosts] = await db.promise().query(
       `SELECT 
         p.id, 
@@ -49,6 +56,7 @@ const createPost = async (req, res) => {
         p.content AS description, 
         p.created_at, 
         p.category,
+        p.images,
         u.username AS author,
         u.profilePicture AS avatar,
         0 AS replyCount,
@@ -60,14 +68,25 @@ const createPost = async (req, res) => {
       [newPostId]
     );
 
-    res.status(201).json({ post: newPosts[0] });
+    // Parse images from JSON string
+    // let parsedImages = [];
+    // try {
+    //   parsedImages = JSON.parse(newPosts[0].images || "[]");
+    // } catch (parseErr) {
+    //   console.warn("Failed to parse images JSON:", parseErr);
+    //   parsedImages = [];
+    // }
+
+    // res.status(201).json({
+    //   post: {
+    //     ...newPosts[0],
+    //     images: parsedImages,
+    //   },
+    // });
   } catch (err) {
-    console.error("Error creating post:", err);
+    console.error("❌ Error creating post:", err);
     res.status(500).json({ error: "Failed to create post" });
   }
 };
-
-
-
 
 module.exports = { createPost };

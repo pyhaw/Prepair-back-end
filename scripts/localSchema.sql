@@ -73,6 +73,7 @@ CREATE TABLE job_postings (
   min_budget DECIMAL(10,2) DEFAULT NULL, -- ✅ Added
   max_budget DECIMAL(10,2) DEFAULT NULL, -- ✅ Added
   notify BOOLEAN DEFAULT 0, -- ✅ Added
+  images JSON DEFAULT NULL,
   status ENUM('open', 'in_progress', 'completed') DEFAULT 'open',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
@@ -96,7 +97,7 @@ CREATE TABLE job_bids (
   status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
-  FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE,
 );
 
 -- Insert a placeholder job bid
@@ -126,6 +127,7 @@ CREATE TABLE forum_postings (
   title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  images JSON DEFAULT NULL, 
   FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

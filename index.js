@@ -84,7 +84,7 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5001; // Start the combined Express + Socket.IO server
 server.listen(PORT, () => console.log(`Server + WebSocket running on port ${PORT}`));
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-  await startUp();
-});
+// app.listen(PORT, async () => {
+//   console.log(`Server running on port ${PORT}`);
+//   await startUp();
+// });
