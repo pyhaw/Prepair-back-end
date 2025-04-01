@@ -17,14 +17,25 @@ const createJobPosting = async (req, res) => {
 
     console.log("\ud83d\udcf1 Received Job Posting Request:", req.body);
 
-    if (!client_id || !title || !description || !location || !urgency || !date) {
+    if (
+      !client_id ||
+      !title ||
+      !description ||
+      !location ||
+      !urgency ||
+      !date
+    ) {
       console.error("\u274c Missing required fields");
-      return res.status(400).json({ error: "All required fields must be provided." });
+      return res
+        .status(400)
+        .json({ error: "All required fields must be provided." });
     }
 
     if (isNaN(Date.parse(date))) {
       console.error("\u274c Invalid date format");
-      return res.status(400).json({ error: "Invalid date format. Please provide a valid date." });
+      return res
+        .status(400)
+        .json({ error: "Invalid date format. Please provide a valid date." });
     }
 
     const parsedMinBudget = min_budget ? parseFloat(min_budget) : null;
@@ -89,7 +100,6 @@ const fetchJobPosting = async (req, res) => {
         job.images = [];
       }
     });
-    
 
     if (!results.length) {
       console.warn("⚠️ No job postings found.");
@@ -103,7 +113,6 @@ const fetchJobPosting = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 const fetchJobPostingByUserId = async (req, res) => {
   try {
@@ -131,13 +140,21 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     if (!results.length) {
       console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
-      return res.status(404).json({ error: "No job postings available for this user." });
+      return res
+        .status(404)
+        .json({ error: "No job postings available for this user." });
     }
 
-    console.log(`\u2705 Job Postings Retrieved for User ID ${userId}:`, results.length);
+    console.log(
+      `\u2705 Job Postings Retrieved for User ID ${userId}:`,
+      results.length
+    );
     res.status(200).json(results);
   } catch (error) {
-    console.error("\ud83d\udd25 Error fetching job postings by user ID:", error);
+    console.error(
+      "\ud83d\udd25 Error fetching job postings by user ID:",
+      error
+    );
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -477,7 +494,13 @@ const completeJob = async (req, res) => {
   SET status = 'completed' 
   WHERE id = ?`;
 
+  const updateBidStatusQuery = `
+  UPDATE job_bids
+  SET status = 'completed' 
+  WHERE id = ?`;
+
   await db.promise().query(updateJobStatusQuery, [jobId]);
+  await db.promise().query(updateBidStatusQuery, [bidId]);
 
   res.status(200).json({ message: "Job completed." });
 };
