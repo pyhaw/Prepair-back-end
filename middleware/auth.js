@@ -26,6 +26,19 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+
+// Middleware to check if the logged-in user is an admin
+const isAdmin = (req, res, next) => {
+  const user = req.user;
+
+  if (!user || user.role !== "admin") {
+    return res.status(403).json({ error: "Access denied. Admins only." });
+  }
+
+  next();
+};
+
+
 // Function to handle logout
 const logout = (req, res) => {
   const authHeader = req.headers["authorization"];
@@ -42,4 +55,4 @@ const logout = (req, res) => {
 };
 
 // Export the middleware, logout function, and the blacklistedTokens Set
-module.exports = { authenticateToken, logout, blacklistedTokens };
+module.exports = { authenticateToken, logout, blacklistedTokens, isAdmin };

@@ -4,7 +4,8 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const path = require("path");
-const axios = require("axios"); // At top of index.js
+const axios = require("axios"); 
+const { startUp } = require("./handlers/api_users.handlers");
 
 // Initialize Express app
 const app = express();
@@ -30,6 +31,8 @@ const postsRoutes = require("./routes/api_posts.routes");
 const jobPostingsRoutes = require("./routes/api_job_postings.routes");
 const chatRoutes = require("./routes/api_chatbot.routes");
 const chatRoomRoutes = require("./routes/api_chat.routes");
+const adminRoutes = require("./routes/api_admin.routes");
+
 
 // Use routes
 app.use("/api", userRoutes);
@@ -72,12 +75,16 @@ io.on("connection", (socket) => {
     console.log(" Client disconnected:", socket.id);
   });
 });
+app.use("/api", adminRoutes);
 
 // Root test route
 app.get("/", (req, res) => {
   res.send("Server is running successfully!");
 });
 
-// ✅ Start the combined Express + Socket.IO server
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5001; // Start the combined Express + Socket.IO server
 server.listen(PORT, () => console.log(`Server + WebSocket running on port ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
+  await startUp();
+});

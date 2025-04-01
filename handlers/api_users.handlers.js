@@ -85,6 +85,23 @@ async function registerUser(req, res) {
   }
 }
 
+//Startup Function (create accounts)
+async function startUp() {
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash("password", saltRounds);
+
+  // Create the user
+  if (!await userExistByUsername("fixer1")) {
+    await createUser("fixer1", "fixer1@gmail.com", hashedPassword, 'fixer');
+  }
+  if (!await userExistByUsername("client1")) {
+    await createUser("client1", "client1@gmail.com", hashedPassword, 'client');
+  }
+  if (!await userExistByUsername("admin1")) {
+    await createUser("admin1", "admin1@gmail.com", hashedPassword, 'admin');
+  }
+}
+
 // Login a user
 async function loginUser(req, res) {
   const { email, password } = req.body;
@@ -173,8 +190,20 @@ async function resetPassword(req, res) {
 async function updateUserProfileImpl(req, res) {
   try {
     const userId = req.params.userId;
-    const { name, email, phone, jobTitle, company, experience, skills, degree, university, graduationYear, previousRole, duration } =
-      req.body;
+    const {
+      username,
+      email,
+      phone,
+      jobTitle,
+      company,
+      experience,
+      skills,
+      degree,
+      university,
+      graduationYear,
+      previousRole,
+      duration,
+    } = req.body;
 
     // Fetch existing user
     const existingUser = await getUserById(userId);
@@ -191,7 +220,7 @@ async function updateUserProfileImpl(req, res) {
 
     // Prepare update object
     const updates = {
-      name,
+      username,
       email,
       phone,
       jobTitle,
@@ -206,7 +235,7 @@ async function updateUserProfileImpl(req, res) {
       profilePicture: newProfilePictureUrl, // Store Cloudinary URL
     };
 
-    console.log(updates)
+    console.log(updates);
 
     // Update user in database
     const success = await updateUserProfile(userId, updates);
@@ -214,7 +243,10 @@ async function updateUserProfileImpl(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json({ message: "Profile updated successfully", profilePicture: newProfilePictureUrl });
+    res.json({
+      message: "Profile updated successfully",
+      profilePicture: newProfilePictureUrl,
+    });
   } catch (error) {
     console.error("Error updating profile:", error.message);
     res.status(500).json({ error: "Internal server error" });
@@ -354,7 +386,8 @@ module.exports = {
   getAllUsersHandler,
   sendOTPToEmail,
   verifyOtp,
-  resetPassword, 
+  resetPassword,
   updateUserProfileImpl,
-  validateTargetUser
+  validateTargetUser,
+  startUp,
 };
