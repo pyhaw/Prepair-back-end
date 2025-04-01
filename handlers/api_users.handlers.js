@@ -78,6 +78,7 @@ async function registerUser(req, res) {
       message: "User created successfully",
       userId: userId,
       token: token,
+      role: role,
     });
   } catch (error) {
     console.error("Error during registration:", error.message);
@@ -91,14 +92,14 @@ async function startUp() {
   const hashedPassword = await bcrypt.hash("password", saltRounds);
 
   // Create the user
-  if (!await userExistByUsername("fixer1")) {
-    await createUser("fixer1", "fixer1@gmail.com", hashedPassword, 'fixer');
+  if (!(await userExistByUsername("fixer1"))) {
+    await createUser("fixer1", "fixer1@gmail.com", hashedPassword, "fixer");
   }
-  if (!await userExistByUsername("client1")) {
-    await createUser("client1", "client1@gmail.com", hashedPassword, 'client');
+  if (!(await userExistByUsername("client1"))) {
+    await createUser("client1", "client1@gmail.com", hashedPassword, "client");
   }
-  if (!await userExistByUsername("admin1")) {
-    await createUser("admin1", "admin1@gmail.com", hashedPassword, 'admin');
+  if (!(await userExistByUsername("admin1"))) {
+    await createUser("admin1", "admin1@gmail.com", hashedPassword, "admin");
   }
 }
 
