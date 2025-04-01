@@ -74,7 +74,7 @@ const createJobPosting = async (req, res) => {
 
 const fetchJobPosting = async (req, res) => {
   try {
-    console.log("\ud83d\udcf1 Fetching Job Postings...");
+    console.log("📱 Fetching Job Postings...");
 
     const query = `
       SELECT id, client_id, title, description, location, urgency, date, min_budget, max_budget, notify, status, created_at, images
@@ -85,21 +85,25 @@ const fetchJobPosting = async (req, res) => {
     const [results] = await db.promise().query(query);
 
     results.forEach((job) => {
-      job.images = job.images ? JSON.parse(job.images) : [];
+      if (!Array.isArray(job.images)) {
+        job.images = [];
+      }
     });
+    
 
     if (!results.length) {
-      console.warn("\u26a0\ufe0f No job postings found.");
+      console.warn("⚠️ No job postings found.");
       return res.status(404).json({ error: "No job postings available." });
     }
 
-    console.log("\u2705 Job Postings Retrieved:", results.length);
+    console.log("✅ Job Postings Retrieved:", results.length);
     res.status(200).json(results);
   } catch (error) {
-    console.error("\ud83d\udd25 Error fetching job postings:", error);
+    console.error("🔥 Error fetching job postings:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 const fetchJobPostingByUserId = async (req, res) => {
   try {

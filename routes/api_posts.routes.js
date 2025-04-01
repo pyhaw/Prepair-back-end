@@ -9,6 +9,7 @@ const { authenticateToken } = require("../middleware/auth");
 router.post("/posts", authenticateToken, createPost);
 
 // GET /api/posts - Retrieve all forum postings
+// GET /api/posts - Retrieve all forum postings
 router.get("/posts", async (req, res) => {
   try {
     const [posts] = await db.promise().query(
@@ -18,6 +19,7 @@ router.get("/posts", async (req, res) => {
          p.content AS description, 
          p.created_at, 
          p.category,
+         p.images,
          u.username AS author,
          u.profilePicture AS avatar,
          (SELECT COUNT(*) FROM post_replies WHERE post_id = p.id) AS replyCount,
@@ -29,8 +31,37 @@ router.get("/posts", async (req, res) => {
        GROUP BY p.id
        ORDER BY p.created_at DESC`
     );
-    console.log("Fetched posts from DB:", posts);
-    res.json({ posts });
+
+    // Safely parse the images field for each post
+    const parsedPosts = posts.map((post) => {
+      let parsedImages = [];
+      try {
+        const rawImages = post.images;
+
+        if (!rawImages) {
+          parsedImages = [];
+        } else if (typeof rawImages === "string") {
+          if (rawImages.trim().startsWith("[")) {
+            parsedImages = JSON.parse(rawImages);
+          } else {
+            parsedImages = [rawImages];
+          }
+        } else if (Array.isArray(rawImages)) {
+          parsedImages = rawImages;
+        }
+      } catch (err) {
+        console.warn(`Failed to parse images for post ${post.id}:`, err);
+        parsedImages = [];
+      }
+
+      return {
+        ...post,
+        images: parsedImages,
+      };
+    });
+
+    console.log("Fetched posts from DB:", parsedPosts);
+    res.json({ posts: parsedPosts });
   } catch (err) {
     console.error("Error fetching posts:", err);
     res.status(500).json({ error: "Internal server error" });

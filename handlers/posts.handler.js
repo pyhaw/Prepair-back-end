@@ -17,7 +17,6 @@ const createPost = async (req, res) => {
 
     console.log("User from token:", req.user);
 
-    // Validate user
     if (!req.user || !req.user.userId) {
       console.error("Missing user ID in token payload");
       return res.status(401).json({ error: "Authentication error: User ID missing" });
@@ -25,21 +24,19 @@ const createPost = async (req, res) => {
 
     const userId = req.user.userId;
 
-    // Validate form inputs
     if (!title || !description) {
       return res.status(400).json({ error: "Title and content are required" });
     }
 
-    // Ensure images is an array
+    // Ensure images is always an array
     let sanitizedImages = [];
 
     if (Array.isArray(images)) {
       sanitizedImages = images;
     } else if (typeof images === "string" && images.trim() !== "") {
-      sanitizedImages = [images]; // wrap string in array
+      sanitizedImages = [images];
     }
 
-    // Insert into database
     const [result] = await db.promise().query(
       `INSERT INTO forum_postings (client_id, title, content, category, images)
        VALUES (?, ?, ?, ?, ?)`,
@@ -48,7 +45,6 @@ const createPost = async (req, res) => {
 
     const newPostId = result.insertId;
 
-    // Retrieve and return the newly created post
     const [newPosts] = await db.promise().query(
       `SELECT 
         p.id, 
@@ -68,21 +64,39 @@ const createPost = async (req, res) => {
       [newPostId]
     );
 
-    // Parse images from JSON string
-    // let parsedImages = [];
-    // try {
-    //   parsedImages = JSON.parse(newPosts[0].images || "[]");
-    // } catch (parseErr) {
-    //   console.warn("Failed to parse images JSON:", parseErr);
-    //   parsedImages = [];
-    // }
+    const rawPost = newPosts[0];
 
-    // res.status(201).json({
-    //   post: {
-    //     ...newPosts[0],
-    //     images: parsedImages,
-    //   },
-    // });
+    let parsedImages = [];
+
+    try {
+      const rawImages = rawPost.images;
+    
+      if (!rawImages) {
+        parsedImages = [];
+      } else if (typeof rawImages === "string") {
+        // Could be "" or JSON string or plain URL
+        if (rawImages.trim().startsWith("[")) {
+          parsedImages = JSON.parse(rawImages); // JSON stringified array
+        } else {
+          parsedImages = [rawImages]; // single URL string
+        }
+      } else if (Array.isArray(rawImages)) {
+        parsedImages = rawImages; // already parsed by MySQL driver
+      } else {
+        parsedImages = []; // fallback
+      }
+    } catch (err) {
+      console.warn("Failed to parse images JSON:", err);
+      parsedImages = [];
+    }
+    
+
+    res.status(201).json({
+      post: {
+        ...rawPost,
+        images: parsedImages, // parsed array
+      },
+    });
   } catch (err) {
     console.error("❌ Error creating post:", err);
     res.status(500).json({ error: "Failed to create post" });
