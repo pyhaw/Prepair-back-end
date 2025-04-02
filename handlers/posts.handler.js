@@ -5,24 +5,33 @@ function getRelativeTime(date) {
   const diffInSeconds = Math.floor((now - date) / 1000);
 
   if (diffInSeconds < 60) return "just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minute(s) ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour(s) ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day(s) ago`;
+  if (diffInSeconds < 3600)
+    return `${Math.floor(diffInSeconds / 60)} minute(s) ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hour(s) ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)} day(s) ago`;
   return `${Math.floor(diffInSeconds / 604800)} week(s) ago`;
 }
 
 const createPost = async (req, res) => {
   try {
-    const { title, description, category = "general", images } = req.body;
+    const {
+      title,
+      description,
+      category = "general",
+      images,
+      userId,
+    } = req.body;
 
-    console.log("User from token:", req.user);
+    console.log("User from token:", req.userId);
 
-    if (!req.user || !req.user.userId) {
+    if (!userId) {
       console.error("Missing user ID in token payload");
-      return res.status(401).json({ error: "Authentication error: User ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Authentication error: User ID missing" });
     }
-
-    const userId = req.user.userId;
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and content are required" });
@@ -70,7 +79,7 @@ const createPost = async (req, res) => {
 
     try {
       const rawImages = rawPost.images;
-    
+
       if (!rawImages) {
         parsedImages = [];
       } else if (typeof rawImages === "string") {
@@ -89,7 +98,6 @@ const createPost = async (req, res) => {
       console.warn("Failed to parse images JSON:", err);
       parsedImages = [];
     }
-    
 
     res.status(201).json({
       post: {
