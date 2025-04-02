@@ -33,12 +33,14 @@ router.get("/job/:id/bids", authenticateToken, fetchJobBids);
 
 router.get("/job-bids", authenticateToken, fetchActiveBidsForFixer);
 router.put("/job-bids/:id", authenticateToken, updateJobBid);
-router.put("/job-postings/:id", authenticateToken, updateJobPosting);
+//router.put("/job-postings/:id", authenticateToken, updateJobPosting);
 router.delete("/job-postings/:id", authenticateToken, deletePosting);
 
 router.post("/accept-bids", authenticateToken, acceptJobBid);
 
 router.post("/complete-job", authenticateToken, completeJob);
+
+router.post("/edit-postings", authenticateToken, updateJobPosting);
 
 // Export the router correctly
 module.exports = router;

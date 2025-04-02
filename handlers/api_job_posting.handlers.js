@@ -134,9 +134,9 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     const [results] = await db.promise().query(query, [userId]);
 
-    results.forEach((job) => {
-      job.images = job.images ? JSON.parse(job.images) : [];
-    });
+    // results.forEach((job) => {
+    //   job.images = job.images ? JSON.parse(job.images) : [];
+    // });
 
     if (!results.length) {
       console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
@@ -297,8 +297,8 @@ const fetchActiveBidsForFixer = async (req, res) => {
 
 const updateJobPosting = async (req, res) => {
   try {
-    const { id } = req.params;
     const {
+      id,
       title,
       description,
       location,
@@ -433,20 +433,14 @@ const updateJobBid = async (req, res) => {
 const deletePosting = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
 
-    const job = await findJobPostingByPk(id);
-    if (!job) {
-      return res.status(404).json({ error: "Job not found" });
-    }
+    const deleteQuery = `
+      DELETE FROM job_postings 
+      WHERE id = ?
+    `;
 
-    if (!job.client_id || job.client_id !== userId) {
-      return res
-        .status(403)
-        .json({ error: "You are not authorized to delete this request" });
-    }
+    await db.promise().query(deleteQuery, [id]);
 
-    await job.destroy();
     res.status(204).end();
   } catch (err) {
     console.error("Error deleting job:", err);
