@@ -380,8 +380,7 @@ const updateJobPosting = async (req, res) => {
 
 const updateJobBid = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { bid_amount, description, status } = req.body;
+    const { id, bid_amount, description } = req.body;
 
     console.log(`📡 Updating Job Bid ID: ${id}`);
 
@@ -403,16 +402,11 @@ const updateJobBid = async (req, res) => {
     // Update job bid in the database
     const query = `
       UPDATE job_bids
-      SET bid_amount = ?, description = ?, status = ?
+      SET bid_amount = ?, description = ?
       WHERE id = ?;
     `;
 
-    const values = [
-      parsedBidAmount,
-      description || null,
-      status || "pending",
-      id,
-    ];
+    const values = [parsedBidAmount, description, id];
 
     const [result] = await db.promise().query(query, values);
 
@@ -433,13 +427,19 @@ const updateJobBid = async (req, res) => {
 const deletePosting = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(id);
 
     const deleteQuery = `
       DELETE FROM job_postings 
       WHERE id = ?
     `;
 
+    const deleteJobBidQuery = `
+      DELETE job_postings 
+      WHERE job_posting_id = ?`;
+
     await db.promise().query(deleteQuery, [id]);
+    await db.promise().query(deleteJobBidQuery, [id]);
 
     res.status(204).end();
   } catch (err) {
@@ -499,6 +499,25 @@ const completeJob = async (req, res) => {
   res.status(200).json({ message: "Job completed." });
 };
 
+const deleteJobBid = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(id);
+
+    const deleteQuery = `
+      DELETE FROM job_bids 
+      WHERE id = ?
+    `;
+
+    await db.promise().query(deleteQuery, [id]);
+
+    res.status(204).end();
+  } catch (err) {
+    console.error("Error deleting job:", err);
+    res.status(500).json({ error: "Server error while trying to delete job" });
+  }
+};
+
 module.exports = {
   createJobPosting,
   fetchJobPosting,
@@ -511,4 +530,5 @@ module.exports = {
   deletePosting,
   acceptJobBid,
   completeJob,
+  deleteJobBid,
 };
