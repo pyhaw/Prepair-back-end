@@ -111,4 +111,40 @@ const createPost = async (req, res) => {
   }
 };
 
-module.exports = { createPost };
+const getPostById = async (req, res) => {
+  const postId = req.params.postId;
+
+  try {
+    const [posts] = await db.promise().query(
+      `SELECT 
+        p.id,
+        p.title,
+        p.content AS description,
+        p.created_at,
+        p.category,
+        p.client_id,  
+        u.username AS author,
+        u.profilePicture AS avatar,
+        COALESCE(SUM(v.vote_type = 'up'), 0) AS upvotes,
+        COALESCE(SUM(v.vote_type = 'down'), 0) AS downvotes
+      FROM forum_postings p
+      LEFT JOIN users u ON p.client_id = u.id
+      LEFT JOIN votes v ON v.post_id = p.id
+      WHERE p.id = ?
+      GROUP BY p.id`,
+      [postId]
+    );
+
+    if (posts.length === 0) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.json({ post: posts[0] });
+  } catch (err) {
+    console.error("❌ Error fetching post by ID:", err);
+    res.status(500).json({ error: "Failed to fetch post" });
+  }
+};
+
+
+module.exports = { createPost, getPostById };

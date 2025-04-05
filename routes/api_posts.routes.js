@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { db } = require("../lib/database");
 
-const { createPost } = require("../handlers/posts.handler");
+const { createPost, getPostById } = require("../handlers/api_posts.handler");
 const { authenticateToken } = require("../middleware/auth");
 
 // POST /api/posts - Create a new forum posting
@@ -72,15 +72,31 @@ router.get("/posts", async (req, res) => {
 router.get("/posts/:postId", async (req, res) => {
   try {
     const postId = req.params.postId;
-    const [posts] = await db
-      .promise()
-      .query(
-        "SELECT id, title, content AS description, created_at FROM forum_postings WHERE id = ?",
-        [postId]
-      );
+
+    const [posts] = await db.promise().query(
+      `SELECT 
+         p.id, 
+         p.title, 
+         p.content AS description, 
+         p.created_at, 
+         p.category,
+         p.client_id,
+         u.username AS author,
+         u.profilePicture AS avatar,
+         COALESCE(SUM(CASE WHEN v.vote_type = 'up' THEN 1 ELSE 0 END), 0) AS upvotes,
+         COALESCE(SUM(CASE WHEN v.vote_type = 'down' THEN 1 ELSE 0 END), 0) AS downvotes
+       FROM forum_postings p
+       LEFT JOIN users u ON p.client_id = u.id
+       LEFT JOIN votes v ON v.post_id = p.id
+       WHERE p.id = ?
+       GROUP BY p.id`,
+      [postId]
+    );
+
     if (posts.length === 0) {
       return res.status(404).json({ error: "Post not found" });
     }
+
     res.json({ post: posts[0] });
   } catch (err) {
     console.error("Error fetching post details:", err);
@@ -88,15 +104,20 @@ router.get("/posts/:postId", async (req, res) => {
   }
 });
 
+
 // GET /api/posts/:postId/replies - Retrieve replies for a specific post
 router.get("/posts/:postId/replies", async (req, res) => {
   try {
     const postId = req.params.postId;
     const [replies] = await db.promise().query(
-      `SELECT r.id, r.content, r.created_at, 
-              u.username as author,
-              COALESCE(SUM(CASE WHEN v.vote_type = 'up' THEN 1 ELSE 0 END), 0) as upvotes,
-              COALESCE(SUM(CASE WHEN v.vote_type = 'down' THEN 1 ELSE 0 END), 0) as downvotes
+      `SELECT 
+          r.id, 
+          r.content, 
+          r.created_at, 
+          r.user_id,  -- ✅ Add this line
+          u.username as author,
+          COALESCE(SUM(CASE WHEN v.vote_type = 'up' THEN 1 ELSE 0 END), 0) as upvotes,
+          COALESCE(SUM(CASE WHEN v.vote_type = 'down' THEN 1 ELSE 0 END), 0) as downvotes
        FROM post_replies r
        LEFT JOIN users u ON r.user_id = u.id
        LEFT JOIN votes v ON v.reply_id = r.id
@@ -104,7 +125,7 @@ router.get("/posts/:postId/replies", async (req, res) => {
        GROUP BY r.id
        ORDER BY r.created_at ASC`,
       [postId]
-    );
+    );    
     res.json({ replies });
   } catch (err) {
     console.error("Error fetching replies:", err);
@@ -452,5 +473,7 @@ router.delete(
     }
   }
 );
+
+router.get("/posts/:postId", getPostById);
 
 module.exports = router;

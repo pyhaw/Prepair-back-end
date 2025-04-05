@@ -32,15 +32,6 @@ CREATE TABLE users (
 );
 
 
--- Insert placeholder users
-INSERT INTO users (username, email, password, role, profilePicture)
-VALUES 
-  ('testuser', 'testuser@gmail.com', 'password', 'fixer', 'https://via.placeholder.com/40'),
-  ('clientuser', 'client@gmail.com', 'password', 'client', 'https://via.placeholder.com/40');
-
-
-
-
 -- ======================================
 -- Create OTP Table
 -- ======================================
@@ -86,6 +77,13 @@ CREATE TABLE job_postings (
   FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Insert placeholder users
+INSERT INTO users (username, email, password, role)
+VALUES 
+  ('testuser', 'testuser@gmail.com', 'password', 'fixer'),
+  ('clientuser', 'client@gmail.com', 'password', 'client');
+
+
 -- Insert a placeholder job posting
 INSERT INTO job_postings 
 (client_id, title, description, location, urgency, date, min_budget, max_budget, notify)
@@ -101,7 +99,7 @@ CREATE TABLE job_bids (
   fixer_id INT NOT NULL,
   bid_amount DECIMAL(10, 2) NOT NULL,
   description TEXT,
-  status ENUM('pending', 'accepted', 'completed') DEFAULT 'pending',
+  status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
   FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE
@@ -206,3 +204,28 @@ CREATE INDEX idx_post_replies_post_id ON post_replies(post_id);
 CREATE INDEX idx_votes_post_id ON votes(post_id);
 CREATE INDEX idx_votes_reply_id ON votes(reply_id);
 CREATE INDEX idx_votes_user_id ON votes(user_id);
+
+-- ======================================
+-- Create ChatRooms Table
+-- ======================================
+
+CREATE TABLE chat_rooms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  room_id VARCHAR(255) NOT NULL UNIQUE, -- e.g., "3-7"
+  user1_id INT NOT NULL,
+  user2_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE private_messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  room_id VARCHAR(255) NOT NULL, -- Format: "11-12"
+  sender_id INT NOT NULL,
+  recipient_id INT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+);
