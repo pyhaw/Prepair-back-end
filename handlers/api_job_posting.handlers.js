@@ -17,14 +17,25 @@ const createJobPosting = async (req, res) => {
 
     console.log("\ud83d\udcf1 Received Job Posting Request:", req.body);
 
-    if (!client_id || !title || !description || !location || !urgency || !date) {
+    if (
+      !client_id ||
+      !title ||
+      !description ||
+      !location ||
+      !urgency ||
+      !date
+    ) {
       console.error("\u274c Missing required fields");
-      return res.status(400).json({ error: "All required fields must be provided." });
+      return res
+        .status(400)
+        .json({ error: "All required fields must be provided." });
     }
 
     if (isNaN(Date.parse(date))) {
       console.error("\u274c Invalid date format");
-      return res.status(400).json({ error: "Invalid date format. Please provide a valid date." });
+      return res
+        .status(400)
+        .json({ error: "Invalid date format. Please provide a valid date." });
     }
 
     const parsedMinBudget = min_budget ? parseFloat(min_budget) : null;
@@ -89,7 +100,6 @@ const fetchJobPosting = async (req, res) => {
         job.images = [];
       }
     });
-    
 
     if (!results.length) {
       console.warn("⚠️ No job postings found.");
@@ -103,7 +113,6 @@ const fetchJobPosting = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
 const fetchJobPostingByUserId = async (req, res) => {
   try {
@@ -125,19 +134,27 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     const [results] = await db.promise().query(query, [userId]);
 
-    results.forEach((job) => {
-      job.images = job.images ? JSON.parse(job.images) : [];
-    });
+    // results.forEach((job) => {
+    //   job.images = job.images ? JSON.parse(job.images) : [];
+    // });
 
     if (!results.length) {
       console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
-      return res.status(404).json({ error: "No job postings available for this user." });
+      return res
+        .status(404)
+        .json({ error: "No job postings available for this user." });
     }
 
-    console.log(`\u2705 Job Postings Retrieved for User ID ${userId}:`, results.length);
+    console.log(
+      `\u2705 Job Postings Retrieved for User ID ${userId}:`,
+      results.length
+    );
     res.status(200).json(results);
   } catch (error) {
-    console.error("\ud83d\udd25 Error fetching job postings by user ID:", error);
+    console.error(
+      "\ud83d\udd25 Error fetching job postings by user ID:",
+      error
+    );
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -280,8 +297,8 @@ const fetchActiveBidsForFixer = async (req, res) => {
 
 const updateJobPosting = async (req, res) => {
   try {
-    const { id } = req.params;
     const {
+      id,
       title,
       description,
       location,
@@ -363,8 +380,7 @@ const updateJobPosting = async (req, res) => {
 
 const updateJobBid = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { bid_amount, description, status } = req.body;
+    const { id, bid_amount, description } = req.body;
 
     console.log(`📡 Updating Job Bid ID: ${id}`);
 
@@ -386,16 +402,11 @@ const updateJobBid = async (req, res) => {
     // Update job bid in the database
     const query = `
       UPDATE job_bids
-      SET bid_amount = ?, description = ?, status = ?
+      SET bid_amount = ?, description = ?
       WHERE id = ?;
     `;
 
-    const values = [
-      parsedBidAmount,
-      description || null,
-      status || "pending",
-      id,
-    ];
+    const values = [parsedBidAmount, description, id];
 
     const [result] = await db.promise().query(query, values);
 
@@ -416,20 +427,20 @@ const updateJobBid = async (req, res) => {
 const deletePosting = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    console.log(id);
 
-    const job = await findJobPostingByPk(id);
-    if (!job) {
-      return res.status(404).json({ error: "Job not found" });
-    }
+    const deleteQuery = `
+      DELETE FROM job_postings 
+      WHERE id = ?
+    `;
 
-    if (!job.client_id || job.client_id !== userId) {
-      return res
-        .status(403)
-        .json({ error: "You are not authorized to delete this request" });
-    }
+    const deleteJobBidQuery = `
+      DELETE job_postings 
+      WHERE job_posting_id = ?`;
 
-    await job.destroy();
+    await db.promise().query(deleteQuery, [id]);
+    await db.promise().query(deleteJobBidQuery, [id]);
+
     res.status(204).end();
   } catch (err) {
     console.error("Error deleting job:", err);
@@ -477,9 +488,34 @@ const completeJob = async (req, res) => {
   SET status = 'completed' 
   WHERE id = ?`;
 
+  const updateBidStatusQuery = `
+  UPDATE job_bids
+  SET status = 'completed' 
+  WHERE id = ?`;
+
   await db.promise().query(updateJobStatusQuery, [jobId]);
+  await db.promise().query(updateBidStatusQuery, [bidId]);
 
   res.status(200).json({ message: "Job completed." });
+};
+
+const deleteJobBid = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(id);
+
+    const deleteQuery = `
+      DELETE FROM job_bids 
+      WHERE id = ?
+    `;
+
+    await db.promise().query(deleteQuery, [id]);
+
+    res.status(204).end();
+  } catch (err) {
+    console.error("Error deleting job:", err);
+    res.status(500).json({ error: "Server error while trying to delete job" });
+  }
 };
 
 module.exports = {
@@ -494,4 +530,5 @@ module.exports = {
   deletePosting,
   acceptJobBid,
   completeJob,
+  deleteJobBid,
 };

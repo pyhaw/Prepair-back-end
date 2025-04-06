@@ -201,7 +201,7 @@ CREATE TABLE chat_rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user1_id INT NOT NULL,
   user2_id INT NOT NULL,
-  UNIQUE KEY unique_pair (LEAST(user1_id, user2_id), GREATEST(user1_id, user2_id)),
+  pair_key VARCHAR(255) NOT NULL UNIQUE,
   FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

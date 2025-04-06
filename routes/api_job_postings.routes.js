@@ -12,6 +12,7 @@ const {
   deletePosting,
   acceptJobBid,
   completeJob,
+  deleteJobBid,
 } = require("../handlers/api_job_posting.handlers");
 const { authenticateToken } = require("../middleware/auth");
 
@@ -32,13 +33,18 @@ router.post("/job-bids", authenticateToken, createJobBid);
 router.get("/job/:id/bids", authenticateToken, fetchJobBids);
 
 router.get("/job-bids", authenticateToken, fetchActiveBidsForFixer);
-router.put("/job-bids/:id", authenticateToken, updateJobBid);
-router.put("/job-postings/:id", authenticateToken, updateJobPosting);
+
 router.delete("/job-postings/:id", authenticateToken, deletePosting);
 
 router.post("/accept-bids", authenticateToken, acceptJobBid);
 
 router.post("/complete-job", authenticateToken, completeJob);
+
+router.post("/edit-postings", authenticateToken, updateJobPosting);
+
+router.post("/edit-bid", authenticateToken, updateJobBid);
+
+router.delete("/delete-bid/:id", authenticateToken, deleteJobBid);
 
 // Export the router correctly
 module.exports = router;

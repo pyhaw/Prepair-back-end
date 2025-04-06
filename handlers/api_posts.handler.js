@@ -5,24 +5,33 @@ function getRelativeTime(date) {
   const diffInSeconds = Math.floor((now - date) / 1000);
 
   if (diffInSeconds < 60) return "just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minute(s) ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hour(s) ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} day(s) ago`;
+  if (diffInSeconds < 3600)
+    return `${Math.floor(diffInSeconds / 60)} minute(s) ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hour(s) ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)} day(s) ago`;
   return `${Math.floor(diffInSeconds / 604800)} week(s) ago`;
 }
 
 const createPost = async (req, res) => {
   try {
-    const { title, description, category = "general", images } = req.body;
+    const {
+      title,
+      description,
+      category = "general",
+      images,
+      userId,
+    } = req.body;
 
-    console.log("User from token:", req.user);
+    console.log("User from token:", req.userId);
 
-    if (!req.user || !req.user.id) {
+    if (!userId) {
       console.error("Missing user ID in token payload");
-      return res.status(401).json({ error: "Authentication error: User ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Authentication error: User ID missing" });
     }
-
-    const userId = req.user.id;
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and content are required" });
@@ -70,7 +79,7 @@ const createPost = async (req, res) => {
 
     try {
       const rawImages = rawPost.images;
-    
+
       if (!rawImages) {
         parsedImages = [];
       } else if (typeof rawImages === "string") {
@@ -89,7 +98,6 @@ const createPost = async (req, res) => {
       console.warn("Failed to parse images JSON:", err);
       parsedImages = [];
     }
-    
 
     res.status(201).json({
       post: {
@@ -103,4 +111,40 @@ const createPost = async (req, res) => {
   }
 };
 
-module.exports = { createPost };
+const getPostById = async (req, res) => {
+  const postId = req.params.postId;
+
+  try {
+    const [posts] = await db.promise().query(
+      `SELECT 
+        p.id,
+        p.title,
+        p.content AS description,
+        p.created_at,
+        p.category,
+        p.client_id,  
+        u.username AS author,
+        u.profilePicture AS avatar,
+        COALESCE(SUM(v.vote_type = 'up'), 0) AS upvotes,
+        COALESCE(SUM(v.vote_type = 'down'), 0) AS downvotes
+      FROM forum_postings p
+      LEFT JOIN users u ON p.client_id = u.id
+      LEFT JOIN votes v ON v.post_id = p.id
+      WHERE p.id = ?
+      GROUP BY p.id`,
+      [postId]
+    );
+
+    if (posts.length === 0) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    res.json({ post: posts[0] });
+  } catch (err) {
+    console.error("❌ Error fetching post by ID:", err);
+    res.status(500).json({ error: "Failed to fetch post" });
+  }
+};
+
+
+module.exports = { createPost, getPostById };

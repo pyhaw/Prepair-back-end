@@ -25,24 +25,51 @@ const savePrivateMessage = async (req, res) => {
 
 const getUserChats = async (req, res) => {
   const { user_id } = req.params;
+
   try {
     const query = `
       SELECT 
-        room_id,
+        cr.id AS room_id,
         CASE
-          WHEN user1_id = ? THEN user2_id
-          ELSE user1_id
-        END as partner_id
-      FROM chat_rooms
-      WHERE user1_id = ? OR user2_id = ?
+          WHEN cr.user1_id = ? THEN cr.user2_id
+          ELSE cr.user1_id
+        END AS partner_id,
+        u.username AS partner_name,
+        u.profilePicture AS partner_picture,
+        pm.message AS last_message,
+        pm.created_at AS last_active
+      FROM chat_rooms cr
+      LEFT JOIN users u ON u.id = CASE
+        WHEN cr.user1_id = ? THEN cr.user2_id
+        ELSE cr.user1_id
+      END
+      LEFT JOIN (
+        SELECT room_id, message, created_at
+        FROM private_messages
+        WHERE (room_id, created_at) IN (
+          SELECT room_id, MAX(created_at)
+          FROM private_messages
+          GROUP BY room_id
+        )
+      ) pm ON pm.room_id = cr.id
+      WHERE cr.user1_id = ? OR cr.user2_id = ?
+      ORDER BY pm.created_at DESC
     `;
-    const [results] = await db.promise().query(query, [user_id, user_id, user_id]);
+
+    const [results] = await db.promise().query(query, [
+      user_id, // for JOIN condition
+      user_id, // for JOIN condition
+      user_id, // for WHERE
+      user_id, // for WHERE
+    ]);
+
     res.json(results);
   } catch (err) {
     console.error("❌ Error fetching user chats:", err);
     res.status(500).json({ error: "Failed to fetch user chats" });
   }
 };
+
 
 const fetchChatHistory = async (req, res) => {
     const { room_id } = req.params;
