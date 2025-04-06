@@ -39,8 +39,8 @@ app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", postsRoutes);
 app.use("/api", jobPostingsRoutes);
-app.use("/api/chatbot", chatRoutes);        // e.g. /api/chatbot/ask
-app.use("/api", chatRoomRoutes);       // e.g. /api/chat/create
+app.use("/api", chatRoutes);     
+app.use("/api", chatRoomRoutes);     
 
 
 // WebSocket logic

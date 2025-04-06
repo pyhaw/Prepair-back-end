@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { db } = require("../lib/database"); // Assumes your database connection is exported here
 
 // POST /api/chat
-router.post("/chat", async (req, res) => {
+router.post("/chatbot", async (req, res) => {
   const { message } = req.body;
 
   // Validate incoming message
@@ -45,7 +45,7 @@ User question: ${message}`;
     let reply = result.response.text();
 
     // Post-process the reply: replace each newline with two newlines to add extra spacing
-    reply = reply.replace(/\n/g, "\n\n");
+    reply = reply.replace(/\n(?=\S)/g, "\n");
 
     // Save the chatbot's reply into chat_history (if user is authenticated)
     if (userId) {
@@ -66,7 +66,7 @@ User question: ${message}`;
   }
 });
 
-router.get("/chat/history", async (req, res) => {
+router.get("/chatbot/history", async (req, res) => {
     const userId = req.user ? req.user.id : null;
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" });
