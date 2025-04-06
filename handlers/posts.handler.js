@@ -17,12 +17,12 @@ const createPost = async (req, res) => {
 
     console.log("User from token:", req.user);
 
-    if (!req.user || !req.user.userId) {
+    if (!req.user || !req.user.id) {
       console.error("Missing user ID in token payload");
       return res.status(401).json({ error: "Authentication error: User ID missing" });
     }
 
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!title || !description) {
       return res.status(400).json({ error: "Title and content are required" });
