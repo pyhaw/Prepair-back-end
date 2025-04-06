@@ -27,49 +27,39 @@ const createChatRoom = async (req, res) => {
 
 const getChatList = async (req, res) => {
   const userId = parseInt(req.params.userId);
-  if (!userId) {
-    return res.status(400).json({ error: "Invalid user ID" });
-  }
-
   try {
-    const [results] = await db.promise().query(
-      `
+    const query = `
       SELECT
         cr.room_id,
-        CASE
-          WHEN cr.user1_id = ? THEN cr.user2_id
-          ELSE cr.user1_id
-        END AS partner_id,
-        u.name AS partner_name,
-        u.profilePicture AS partner_picture,
-        pm.message AS last_message,
-        pm.created_at AS last_active
+        u.id as partner_id,
+        u.username as partner_name,
+        u.profilePicture as partner_picture,
+        pm.message as last_message,
+        pm.created_at as last_active
       FROM chat_rooms cr
-      JOIN users u ON u.id = CASE
+      JOIN users u
+        ON u.id = CASE
           WHEN cr.user1_id = ? THEN cr.user2_id
           ELSE cr.user1_id
         END
       LEFT JOIN (
-        SELECT room_id, message, created_at
+        SELECT room_id, MAX(created_at) as max_time
         FROM private_messages
-        WHERE (room_id, created_at) IN (
-          SELECT room_id, MAX(created_at)
-          FROM private_messages
-          GROUP BY room_id
-        )
-      ) pm ON cr.room_id = pm.room_id
+        GROUP BY room_id
+      ) lm ON lm.room_id = cr.room_id
+      LEFT JOIN private_messages pm
+        ON pm.room_id = lm.room_id AND pm.created_at = lm.max_time
       WHERE cr.user1_id = ? OR cr.user2_id = ?
-      ORDER BY pm.created_at DESC
-      `,
-      [userId, userId, userId, userId]
-    );
-
+      ORDER BY last_active DESC;
+    `;
+    const [results] = await db.promise().query(query, [userId, userId, userId]);
     res.status(200).json(results);
   } catch (err) {
     console.error("❌ Error fetching chat list:", err);
     res.status(500).json({ error: "Failed to fetch chat list" });
   }
 };
+
 
 
 module.exports = { createChatRoom, getChatList };

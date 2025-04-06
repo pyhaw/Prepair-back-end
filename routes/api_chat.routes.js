@@ -7,7 +7,7 @@ const { getUserChats } = require("../handlers/api_chat.handlers");
 
 router.post("/save-message", savePrivateMessage);
 router.get("/chat-history/:room_id", fetchChatHistory);
-router.post("/chat-room", createChatRoom);
-router.get("/chats/:userId", getChatList);
+router.post("/create", createChatRoom);
+router.get("/chats/:userId", getChatList); // ✅ Cleaner route
 
 module.exports = router;
