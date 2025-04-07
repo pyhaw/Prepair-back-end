@@ -83,12 +83,6 @@ CREATE TABLE job_postings (
   FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Insert placeholder users
-INSERT INTO users (username, email, password, role)
-VALUES 
-  ('testuser', 'testuser@gmail.com', 'password', 'fixer'),
-  ('clientuser', 'client@gmail.com', 'password', 'client');
-
 
 -- Insert a placeholder job posting
 INSERT INTO job_postings 
@@ -108,7 +102,6 @@ CREATE TABLE job_bids (
   status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (job_posting_id) REFERENCES job_postings(id) ON DELETE CASCADE,
-  FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE
   FOREIGN KEY (fixer_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
