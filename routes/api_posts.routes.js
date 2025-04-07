@@ -164,14 +164,15 @@ router.post("/posts/:postId/replies", authenticateToken, async (req, res) => {
 
     // Fetch the newly created reply with author info
     const [replies] = await db.promise().query(
-      `SELECT r.id, r.content, r.created_at, u.username as author, 0 as upvotes, 0 as downvotes
+      `SELECT r.id, r.content, r.created_at, u.username as author, r.user_id, 0 as upvotes, 0 as downvotes
        FROM post_replies r
        JOIN users u ON r.user_id = u.id
        WHERE r.id = ?`,
       [result.insertId]
     );
 
-    res.status(201).json({ reply: replies[0] });
+    res.status(201).json({ reply: replies[0]
+     });
   } catch (err) {
     console.error("Error creating reply:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -432,14 +433,14 @@ router.put(
           replyId,
         ]);
 
-      const [updatedReplies] = await db.promise().query(
-        `SELECT r.id, r.content, r.created_at, u.username as author, 0 as upvotes, 0 as downvotes
-       FROM post_replies r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.id = ?`,
-        [replyId]
-      );
-      res.json({ reply: updatedReplies[0] });
+        const [updatedReplies] = await db.promise().query(
+          `SELECT r.id, r.content, r.created_at, u.username as author, r.user_id, 0 as upvotes, 0 as downvotes
+           FROM post_replies r
+           JOIN users u ON r.user_id = u.id
+           WHERE r.id = ?`,
+          [replyId]
+        );
+        res.json({ reply: updatedReplies[0] });
     } catch (err) {
       console.error("Error updating reply:", err);
       res.status(500).json({ error: "Internal server error" });
