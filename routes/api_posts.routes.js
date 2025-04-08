@@ -69,6 +69,7 @@ router.get("/posts", async (req, res) => {
 });
 
 // GET /api/posts/:postId - Retrieve a single forum posting by ID
+// GET /api/posts/:postId - Retrieve a single forum posting by ID with image parsing
 router.get("/posts/:postId", async (req, res) => {
   try {
     const postId = req.params.postId;
@@ -80,6 +81,7 @@ router.get("/posts/:postId", async (req, res) => {
          p.content AS description, 
          p.created_at, 
          p.category,
+         p.images,
          p.client_id,
          u.username AS author,
          u.profilePicture AS avatar,
@@ -97,7 +99,33 @@ router.get("/posts/:postId", async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    res.json({ post: posts[0] });
+    const rawPost = posts[0];
+
+    // ✅ parse images
+    let parsedImages = [];
+    try {
+      if (!rawPost.images) {
+        parsedImages = [];
+      } else if (typeof rawPost.images === "string") {
+        if (rawPost.images.trim().startsWith("[")) {
+          parsedImages = JSON.parse(rawPost.images);
+        } else {
+          parsedImages = [rawPost.images];
+        }
+      } else if (Array.isArray(rawPost.images)) {
+        parsedImages = rawPost.images;
+      }
+    } catch (err) {
+      console.warn(`Failed to parse images for post ${postId}:`, err);
+      parsedImages = [];
+    }
+
+    res.json({
+      post: {
+        ...rawPost,
+        images: parsedImages,
+      },
+    });
   } catch (err) {
     console.error("Error fetching post details:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -347,7 +375,7 @@ router.get("/posts/:postId/user-votes", authenticateToken, async (req, res) => {
 router.put("/posts/:postId", authenticateToken, async (req, res) => {
   try {
     const postId = req.params.postId;
-    const { title, content, category } = req.body;
+    const { title, content, category, images } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ error: "Title and content are required" });
@@ -356,31 +384,63 @@ router.put("/posts/:postId", authenticateToken, async (req, res) => {
     const [posts] = await db
       .promise()
       .query("SELECT id, client_id FROM forum_postings WHERE id = ?", [postId]);
+
     if (posts.length === 0) {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    // Optionally, add a check that (req.user.id || req.user.userId) matches posts[0].client_id
+    // ✅ Stringify images array to store in DB as text
+    const imageString = JSON.stringify(images || []);
 
+    // ✅ Now update the images field too
     await db
       .promise()
       .query(
-        "UPDATE forum_postings SET title = ?, content = ?, category = ? WHERE id = ?",
-        [title, content, category || "general", postId]
+        "UPDATE forum_postings SET title = ?, content = ?, category = ?, images = ? WHERE id = ?",
+        [title, content, category || "general", imageString, postId]
       );
 
+    // ✅ Re-fetch updated post
     const [updatedPosts] = await db
       .promise()
       .query(
-        "SELECT id, title, content AS description, created_at, category FROM forum_postings WHERE id = ?",
+        "SELECT id, title, content AS description, created_at, category, images FROM forum_postings WHERE id = ?",
         [postId]
       );
-    res.json({ post: updatedPosts[0] });
+
+    // ✅ Parse images safely
+    let parsedImages = [];
+    try {
+      const rawImages = updatedPosts[0].images;
+      if (!rawImages) {
+        parsedImages = [];
+      } else if (typeof rawImages === "string") {
+        if (rawImages.trim().startsWith("[")) {
+          parsedImages = JSON.parse(rawImages);
+        } else {
+          parsedImages = [rawImages];
+        }
+      } else if (Array.isArray(rawImages)) {
+        parsedImages = rawImages;
+      }
+    } catch (err) {
+      console.warn(`Failed to parse images for post ${postId}:`, err);
+    }
+
+    // ✅ Send updated post with parsed images
+    res.json({
+      post: {
+        ...updatedPosts[0],
+        images: parsedImages,
+      },
+    });
+
   } catch (err) {
     console.error("Error updating post:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 // DELETE /api/posts/:postId - Delete a forum posting
 router.delete("/posts/:postId", authenticateToken, async (req, res) => {

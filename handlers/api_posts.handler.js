@@ -122,6 +122,7 @@ const getPostById = async (req, res) => {
         p.content AS description,
         p.created_at,
         p.category,
+        p.images,
         p.client_id,  
         u.username AS author,
         u.profilePicture AS avatar,
@@ -139,12 +140,41 @@ const getPostById = async (req, res) => {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    res.json({ post: posts[0] });
+    const rawPost = posts[0];
+    console.log(rawPost)
+
+    // 🧠 Parse the images field
+    let parsedImages = [];
+    try {
+      const rawImages = rawPost.images;
+      if (!rawImages) {
+        parsedImages = [];
+      } else if (typeof rawImages === "string") {
+        if (rawImages.trim().startsWith("[")) {
+          parsedImages = JSON.parse(rawImages);
+        } else {
+          parsedImages = [rawImages];
+        }
+      } else if (Array.isArray(rawImages)) {
+        parsedImages = rawImages;
+      }
+    } catch (err) {
+      console.warn("Failed to parse images JSON:", err);
+      parsedImages = [];
+    }
+
+    res.json({
+      post: {
+        ...rawPost,
+        images: parsedImages,
+      },
+    });
   } catch (err) {
     console.error("❌ Error fetching post by ID:", err);
     res.status(500).json({ error: "Failed to fetch post" });
   }
 };
+
 
 
 module.exports = { createPost, getPostById };
