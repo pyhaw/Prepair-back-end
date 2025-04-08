@@ -117,11 +117,10 @@ const fetchJobPosting = async (req, res) => {
 const fetchJobPostingByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
-
-    console.log(`\ud83d\udcf1 Fetching Job Postings for User ID: ${userId}`);
+    console.log(`📱 Fetching Job Postings for User ID: ${userId}`);
 
     if (!userId || isNaN(parseInt(userId, 10))) {
-      console.error("\u274c Invalid user ID");
+      console.error("❌ Invalid user ID");
       return res.status(400).json({ error: "Invalid user ID." });
     }
 
@@ -134,27 +133,21 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     const [results] = await db.promise().query(query, [userId]);
 
-    // results.forEach((job) => {
-    //   job.images = job.images ? JSON.parse(job.images) : [];
-    // });
+    results.forEach((job) => {
+      job.images = job.images ? JSON.parse(job.images) : [];
+    });
 
     if (!results.length) {
-      console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
+      console.warn(`⚠️ No job postings found for User ID: ${userId}`);
       return res
         .status(404)
         .json({ error: "No job postings available for this user." });
     }
 
-    console.log(
-      `\u2705 Job Postings Retrieved for User ID ${userId}:`,
-      results.length
-    );
+    console.log(`✅ Job Postings Retrieved for User ID ${userId}:`, results.length);
     res.status(200).json(results);
   } catch (error) {
-    console.error(
-      "\ud83d\udd25 Error fetching job postings by user ID:",
-      error
-    );
+    console.error("🔥 Error fetching job postings by user ID:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -307,11 +300,11 @@ const updateJobPosting = async (req, res) => {
       min_budget,
       max_budget,
       notify,
+      images,
     } = req.body;
 
     console.log(`📡 Updating Job Posting ID: ${id}`);
 
-    // Validate required fields
     if (!title || !description || !location || !urgency || !date) {
       console.error("❌ Missing required fields");
       return res
@@ -319,7 +312,6 @@ const updateJobPosting = async (req, res) => {
         .json({ error: "All required fields must be provided." });
     }
 
-    // Ensure date is valid
     if (isNaN(Date.parse(date))) {
       console.error("❌ Invalid date format");
       return res
@@ -327,11 +319,9 @@ const updateJobPosting = async (req, res) => {
         .json({ error: "Invalid date format. Please provide a valid date." });
     }
 
-    // Convert budgets to float or set to null
     const parsedMinBudget = min_budget ? parseFloat(min_budget) : null;
     const parsedMaxBudget = max_budget ? parseFloat(max_budget) : null;
 
-    // Ensure min_budget is not greater than max_budget
     if (
       parsedMinBudget !== null &&
       parsedMaxBudget !== null &&
@@ -343,10 +333,9 @@ const updateJobPosting = async (req, res) => {
       });
     }
 
-    // Update job posting in the database
     const query = `
       UPDATE job_postings
-      SET title = ?, description = ?, location = ?, urgency = ?, date = ?, min_budget = ?, max_budget = ?, notify = ?
+      SET title = ?, description = ?, location = ?, urgency = ?, date = ?, min_budget = ?, max_budget = ?, notify = ?, images = ?
       WHERE id = ?;
     `;
 
@@ -359,6 +348,7 @@ const updateJobPosting = async (req, res) => {
       parsedMinBudget,
       parsedMaxBudget,
       notify ? 1 : 0,
+      JSON.stringify(images || []),
       id,
     ];
 
@@ -370,13 +360,13 @@ const updateJobPosting = async (req, res) => {
     }
 
     console.log(`✅ Job Posting ID ${id} Updated`);
-
     res.status(200).json({ message: "Job posting updated successfully!" });
   } catch (error) {
     console.error("🔥 Error updating job posting:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 const updateJobBid = async (req, res) => {
   try {
@@ -559,6 +549,10 @@ const fetchActiveJobPostingsByUserId = async (req, res) => {
     `;
 
     const [results] = await db.promise().query(query, [userId]);
+
+    results.forEach((job) => {
+      job.images = job.images ? JSON.parse(job.images) : [];
+    });
 
     if (!results.length) {
       return res.status(404).json({ error: "No active jobs for this user." });
