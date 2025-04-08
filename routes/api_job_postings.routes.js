@@ -28,7 +28,7 @@ if (!router || typeof router !== "function") {
 router.post("/job-postings", authenticateToken, createJobPosting);
 router.get("/job-postings", authenticateToken, fetchJobPosting);
 
-router.get("/job-postings/active/:userId", authenticateToken, fetchActiveJobPostingsByUserId);
+//router.get("/job-postings/active/:userId", authenticateToken, fetchActiveJobPostingsByUserId);
 
 // Route to fetch job postings by user ID
 router.get("/job-postings/:userId", fetchJobPostingByUserId);
