@@ -115,12 +115,14 @@ const fetchJobPosting = async (req, res) => {
 };
 
 const fetchJobPostingByUserId = async (req, res) => {
+  //PY image here
   try {
     const { userId } = req.params;
-    console.log(`📱 Fetching Job Postings for User ID: ${userId}`);
+
+    console.log(`\ud83d\udcf1 Fetching Job Postings for User ID: ${userId}`);
 
     if (!userId || isNaN(parseInt(userId, 10))) {
-      console.error("❌ Invalid user ID");
+      console.error("\u274c Invalid user ID");
       return res.status(400).json({ error: "Invalid user ID." });
     }
 
@@ -133,21 +135,29 @@ const fetchJobPostingByUserId = async (req, res) => {
 
     const [results] = await db.promise().query(query, [userId]);
 
-    results.forEach((job) => {
-      job.images = job.images ? JSON.parse(job.images) : [];
-    });
+    console.log(results);
+
+    // results.forEach((job) => {
+    //   job.images = job.images ? JSON.parse(job.images) : [];
+    // });
 
     if (!results.length) {
-      console.warn(`⚠️ No job postings found for User ID: ${userId}`);
+      console.warn(`\u26a0\ufe0f No job postings found for User ID: ${userId}`);
       return res
         .status(404)
         .json({ error: "No job postings available for this user." });
     }
 
-    console.log(`✅ Job Postings Retrieved for User ID ${userId}:`, results.length);
+    console.log(
+      `\u2705 Job Postings Retrieved for User ID ${userId}:`,
+      results.length
+    );
     res.status(200).json(results);
   } catch (error) {
-    console.error("🔥 Error fetching job postings by user ID:", error);
+    console.error(
+      "\ud83d\udd25 Error fetching job postings by user ID:",
+      error
+    );
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -248,6 +258,7 @@ const fetchJobBids = async (req, res) => {
 };
 
 const fetchActiveBidsForFixer = async (req, res) => {
+  //PY image here
   try {
     const { fixer_id } = req.query; // Extract fixer_id from the query parameters
 
@@ -367,7 +378,6 @@ const updateJobPosting = async (req, res) => {
   }
 };
 
-
 const updateJobBid = async (req, res) => {
   try {
     const { id, bid_amount, description } = req.body;
@@ -483,7 +493,9 @@ const completeJob = async (req, res) => {
 
     const [rows] = await db
       .promise()
-      .query(`SELECT job_posting_id, fixer_id FROM job_bids WHERE id = ?`, [bidId]);
+      .query(`SELECT job_posting_id, fixer_id FROM job_bids WHERE id = ?`, [
+        bidId,
+      ]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Bid not found." });
@@ -494,7 +506,9 @@ const completeJob = async (req, res) => {
     const insertCompletedJobQuery = `
       INSERT INTO completed_jobs (job_posting_id, fixer_id)
       VALUES (?, ?)`;
-    await db.promise().query(insertCompletedJobQuery, [job_posting_id, fixer_id]);
+    await db
+      .promise()
+      .query(insertCompletedJobQuery, [job_posting_id, fixer_id]);
 
     res.status(200).json({ message: "Job completed." });
   } catch (err) {
@@ -522,48 +536,50 @@ const deleteJobBid = async (req, res) => {
   }
 };
 
-const fetchActiveJobPostingsByUserId = async (req, res) => {
-  try {
-    const { userId } = req.params;
+// old codes
+// const fetchActiveJobPostingsByUserId = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
 
-    console.log(`📱 Fetching ACTIVE Job Postings for User ID: ${userId}`);
+//     console.log(`📱 Fetching ACTIVE Job Postings for User ID: ${userId}`);
 
-    if (!userId || isNaN(parseInt(userId, 10))) {
-      return res.status(400).json({ error: "Invalid user ID." });
-    }
+//     if (!userId || isNaN(parseInt(userId, 10))) {
+//       return res.status(400).json({ error: "Invalid user ID." });
+//     }
 
-    const query = `
-      SELECT 
-        jp.*, 
-        jb.id AS accepted_bid_id, 
-        jb.fixer_id,
-        u.username AS fixer_name,
-        u.profilePicture
-      FROM job_postings jp
-      LEFT JOIN job_bids jb 
-        ON jb.job_posting_id = jp.id AND jb.status = 'accepted'
-      LEFT JOIN users u
-        ON jb.fixer_id = u.id
-      WHERE jp.client_id = ? AND jp.status = 'in_progress'
-      ORDER BY jp.created_at DESC;
-    `;
+//     const query = `
+//       SELECT
+//         jp.*,
+//         jb.id AS accepted_bid_id,
+//         jb.fixer_id,
+//         u.username AS fixer_name,
+//         u.profilePicture
+//       FROM job_postings jp
+//       LEFT JOIN job_bids jb
+//         ON jb.job_posting_id = jp.id AND jb.status = 'accepted'
+//       LEFT JOIN users u
+//         ON jb.fixer_id = u.id
+//       WHERE jp.client_id = ? AND jp.status = 'in_progress'
+//       ORDER BY jp.created_at DESC;
+//     `;
 
-    const [results] = await db.promise().query(query, [userId]);
+//     const [results] = await db.promise().query(query, [userId]);
+//     console.log(results);
 
-    results.forEach((job) => {
-      job.images = job.images ? JSON.parse(job.images) : [];
-    });
+//     results.forEach((job) => {
+//       job.images = job.images ? JSON.parse(job.images) : [];
+//     });
 
-    if (!results.length) {
-      return res.status(404).json({ error: "No active jobs for this user." });
-    }
+//     if (!results.length) {
+//       return res.status(404).json({ error: "No active jobs for this user." });
+//     }
 
-    res.status(200).json(results);
-  } catch (error) {
-    console.error("Error fetching active job postings:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
+//     res.status(200).json(results);
+//   } catch (error) {
+//     console.error("Error fetching active job postings:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
 
 const rateFixer = async (req, res) => {
   try {
@@ -575,36 +591,44 @@ const rateFixer = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const [jobRows] = await db.promise().query(
-      `SELECT * FROM job_postings WHERE id = ? AND client_id = ? AND status = 'completed'`,
-      [jobId, client_id]
-    );
+    const [jobRows] = await db
+      .promise()
+      .query(
+        `SELECT * FROM job_postings WHERE id = ? AND client_id = ? AND status = 'completed'`,
+        [jobId, client_id]
+      );
 
     if (jobRows.length === 0) {
-      return res.status(403).json({ error: "You are not allowed to rate this job." });
+      return res
+        .status(403)
+        .json({ error: "You are not allowed to rate this job." });
     }
 
     const [existingReview] = await db
       .promise()
-      .query(
-        `SELECT * FROM reviews WHERE client_id = ? AND fixer_id = ?`,
-        [client_id, fixer_id]
-      );
-    
-    console.log("Found review:", existingReview); 
+      .query(`SELECT * FROM reviews WHERE client_id = ? AND fixer_id = ?`, [
+        client_id,
+        fixer_id,
+      ]);
+
+    console.log("Found review:", existingReview);
 
     if (existingReview.length > 0) {
       // Update existing review
-      await db.promise().query(
-        `UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE client_id = ? AND fixer_id = ?`,
-        [rating, comment, client_id, fixer_id]
-      );
+      await db
+        .promise()
+        .query(
+          `UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE client_id = ? AND fixer_id = ?`,
+          [rating, comment, client_id, fixer_id]
+        );
     } else {
       // Insert new review
-      await db.promise().query(
-        `INSERT INTO reviews (client_id, fixer_id, rating, comment) VALUES (?, ?, ?, ?)`,
-        [client_id, fixer_id, rating, comment]
-      );
+      await db
+        .promise()
+        .query(
+          `INSERT INTO reviews (client_id, fixer_id, rating, comment) VALUES (?, ?, ?, ?)`,
+          [client_id, fixer_id, rating, comment]
+        );
     }
 
     res.status(200).json({ message: "Review submitted successfully!" });
