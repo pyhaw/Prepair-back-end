@@ -483,20 +483,34 @@ const completeJob = async (req, res) => {
   if (!bidId || !jobId) {
     return res.status(400).json({ error: "Missing bidId or jobId" });
   }
-  const updateJobStatusQuery = `
-  UPDATE job_postings 
-  SET status = 'completed' 
-  WHERE id = ?`;
 
-  const updateBidStatusQuery = `
-  UPDATE job_bids
-  SET status = 'completed' 
-  WHERE id = ?`;
+  try {
+    const updateJobStatusQuery = `
+      UPDATE job_postings 
+      SET status = 'completed' 
+      WHERE id = ?`;
+    await db.promise().query(updateJobStatusQuery, [jobId]);
 
-  await db.promise().query(updateJobStatusQuery, [jobId]);
-  await db.promise().query(updateBidStatusQuery, [bidId]);
+    const [rows] = await db
+      .promise()
+      .query(`SELECT job_posting_id, fixer_id FROM job_bids WHERE id = ?`, [bidId]);
 
-  res.status(200).json({ message: "Job completed." });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Bid not found." });
+    }
+
+    const { job_posting_id, fixer_id } = rows[0];
+
+    const insertCompletedJobQuery = `
+      INSERT INTO completed_jobs (job_posting_id, fixer_id)
+      VALUES (?, ?)`;
+    await db.promise().query(insertCompletedJobQuery, [job_posting_id, fixer_id]);
+
+    res.status(200).json({ message: "Job completed." });
+  } catch (err) {
+    console.error("Error completing job:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 const deleteJobBid = async (req, res) => {
@@ -518,6 +532,94 @@ const deleteJobBid = async (req, res) => {
   }
 };
 
+const fetchActiveJobPostingsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    console.log(`📱 Fetching ACTIVE Job Postings for User ID: ${userId}`);
+
+    if (!userId || isNaN(parseInt(userId, 10))) {
+      return res.status(400).json({ error: "Invalid user ID." });
+    }
+
+    const query = `
+      SELECT 
+        jp.*, 
+        jb.id AS accepted_bid_id, 
+        jb.fixer_id,
+        u.username AS fixer_name,
+        u.profilePicture
+      FROM job_postings jp
+      LEFT JOIN job_bids jb 
+        ON jb.job_posting_id = jp.id AND jb.status = 'accepted'
+      LEFT JOIN users u
+        ON jb.fixer_id = u.id
+      WHERE jp.client_id = ? AND jp.status = 'in_progress'
+      ORDER BY jp.created_at DESC;
+    `;
+
+    const [results] = await db.promise().query(query, [userId]);
+
+    if (!results.length) {
+      return res.status(404).json({ error: "No active jobs for this user." });
+    }
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Error fetching active job postings:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const rateFixer = async (req, res) => {
+  try {
+    const { id: jobId } = req.params;
+    const { fixer_id, rating, comment } = req.body;
+    const client_id = req.user.id;
+
+    if (!fixer_id || !rating) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const [jobRows] = await db.promise().query(
+      `SELECT * FROM job_postings WHERE id = ? AND client_id = ? AND status = 'completed'`,
+      [jobId, client_id]
+    );
+
+    if (jobRows.length === 0) {
+      return res.status(403).json({ error: "You are not allowed to rate this job." });
+    }
+
+    const [existingReview] = await db
+      .promise()
+      .query(
+        `SELECT * FROM reviews WHERE client_id = ? AND fixer_id = ?`,
+        [client_id, fixer_id]
+      );
+    
+    console.log("Found review:", existingReview); 
+
+    if (existingReview.length > 0) {
+      // Update existing review
+      await db.promise().query(
+        `UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE client_id = ? AND fixer_id = ?`,
+        [rating, comment, client_id, fixer_id]
+      );
+    } else {
+      // Insert new review
+      await db.promise().query(
+        `INSERT INTO reviews (client_id, fixer_id, rating, comment) VALUES (?, ?, ?, ?)`,
+        [client_id, fixer_id, rating, comment]
+      );
+    }
+
+    res.status(200).json({ message: "Review submitted successfully!" });
+  } catch (err) {
+    console.error("Error submitting review:", err);
+    res.status(500).json({ error: "Failed to submit review." });
+  }
+};
+
 module.exports = {
   createJobPosting,
   fetchJobPosting,
@@ -531,4 +633,6 @@ module.exports = {
   acceptJobBid,
   completeJob,
   deleteJobBid,
+  rateFixer,
+  fetchActiveJobPostingsByUserId,
 };
