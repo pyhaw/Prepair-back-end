@@ -144,7 +144,10 @@ const fetchJobPostingByUserId = async (req, res) => {
         .json({ error: "No job postings available for this user." });
     }
 
-    console.log(`✅ Job Postings Retrieved for User ID ${userId}:`, results.length);
+    console.log(
+      `✅ Job Postings Retrieved for User ID ${userId}:`,
+      results.length
+    );
     res.status(200).json(results);
   } catch (error) {
     console.error("🔥 Error fetching job postings by user ID:", error);
@@ -367,7 +370,6 @@ const updateJobPosting = async (req, res) => {
   }
 };
 
-
 const updateJobBid = async (req, res) => {
   try {
     const { id, bid_amount, description } = req.body;
@@ -483,7 +485,9 @@ const completeJob = async (req, res) => {
 
     const [rows] = await db
       .promise()
-      .query(`SELECT job_posting_id, fixer_id FROM job_bids WHERE id = ?`, [bidId]);
+      .query(`SELECT job_posting_id, fixer_id FROM job_bids WHERE id = ?`, [
+        bidId,
+      ]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Bid not found." });
@@ -494,7 +498,9 @@ const completeJob = async (req, res) => {
     const insertCompletedJobQuery = `
       INSERT INTO completed_jobs (job_posting_id, fixer_id)
       VALUES (?, ?)`;
-    await db.promise().query(insertCompletedJobQuery, [job_posting_id, fixer_id]);
+    await db
+      .promise()
+      .query(insertCompletedJobQuery, [job_posting_id, fixer_id]);
 
     res.status(200).json({ message: "Job completed." });
   } catch (err) {
@@ -575,36 +581,44 @@ const rateFixer = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const [jobRows] = await db.promise().query(
-      `SELECT * FROM job_postings WHERE id = ? AND client_id = ? AND status = 'completed'`,
-      [jobId, client_id]
-    );
+    const [jobRows] = await db
+      .promise()
+      .query(
+        `SELECT * FROM job_postings WHERE id = ? AND client_id = ? AND status = 'completed'`,
+        [jobId, client_id]
+      );
 
     if (jobRows.length === 0) {
-      return res.status(403).json({ error: "You are not allowed to rate this job." });
+      return res
+        .status(403)
+        .json({ error: "You are not allowed to rate this job." });
     }
 
     const [existingReview] = await db
       .promise()
-      .query(
-        `SELECT * FROM reviews WHERE client_id = ? AND fixer_id = ?`,
-        [client_id, fixer_id]
-      );
-    
-    console.log("Found review:", existingReview); 
+      .query(`SELECT * FROM reviews WHERE client_id = ? AND fixer_id = ?`, [
+        client_id,
+        fixer_id,
+      ]);
+
+    console.log("Found review:", existingReview);
 
     if (existingReview.length > 0) {
       // Update existing review
-      await db.promise().query(
-        `UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE client_id = ? AND fixer_id = ?`,
-        [rating, comment, client_id, fixer_id]
-      );
+      await db
+        .promise()
+        .query(
+          `UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE client_id = ? AND fixer_id = ?`,
+          [rating, comment, client_id, fixer_id]
+        );
     } else {
       // Insert new review
-      await db.promise().query(
-        `INSERT INTO reviews (client_id, fixer_id, rating, comment) VALUES (?, ?, ?, ?)`,
-        [client_id, fixer_id, rating, comment]
-      );
+      await db
+        .promise()
+        .query(
+          `INSERT INTO reviews (client_id, fixer_id, rating, comment) VALUES (?, ?, ?, ?)`,
+          [client_id, fixer_id, rating, comment]
+        );
     }
 
     res.status(200).json({ message: "Review submitted successfully!" });
