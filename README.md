@@ -21,6 +21,7 @@ Navigate to the root directory of the backend project and run:
 ```bash
 npm install
 ```
+
 This installs all required packages listed in `package.json`.
 
 ## 2. Environment Configuration
@@ -46,7 +47,11 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=465
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_specific_password
+
+# Chatbot Configuration
+GEMINI_API_KEY=AIzaSyAOWn393vNmB8KikZG0jGmdBVOXA9WCmQg
 ```
+
 Note: For Gmail accounts, an App Password must be generated and used in place of your standard email password.
 
 ## 3. Setup MySQL Database
@@ -64,5 +69,6 @@ Once your environment variables are configured and database is set up, start the
 ```
 node index.js
 ```
+
 By default, the backend will be available at:  
 http://localhost:5001
